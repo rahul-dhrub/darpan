@@ -72,6 +72,13 @@ io.on("connection", socket => {
         isOn: data.isOn
       });
     });
+    
+    // Handle peer count messages
+    socket.on("peer-count", data => {
+      socket.to(data.to).emit("peer-count", {
+        count: data.count
+      });
+    });
   });
 });
 

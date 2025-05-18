@@ -1,0 +1,435 @@
+// Module for socket connection and WebRTC peer connections
+import { updateGridLayout } from './layout.js';
+import { addPinButton, unpinVideo } from './video-pin.js';
+import { addStatusIndicators, updatePeerMicStatus, updatePeerVideoStatus } from './status-indicators.js';
+import { announceToScreenReaders, addVideoLoadedListener } from './utils.js';
+import { updateParticipantCount } from './ui.js';
+import { stopScreenSharing, shareScreenWithUser } from './screen-share.js';
+
+// Create a peer connection
+function createPeer(userId) {
+  const peer = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  });
+
+  peer.onicecandidate = event => {
+    if (event.candidate) {
+      window.socket.emit("ice-candidate", {
+        to: userId,
+        candidate: event.candidate,
+        isScreenShare: false
+      });
+    }
+  };
+
+  peer.ontrack = event => {
+    // Check if video already exists
+    let videoContainer = document.getElementById(`container-${userId}`);
+    let remoteVideo = document.getElementById(userId);
+    
+    if (!videoContainer) {
+      // Create new container for video
+      videoContainer = document.createElement("div");
+      videoContainer.id = `container-${userId}`;
+      videoContainer.classList.add("video-item");
+      
+      // Create new video element
+      remoteVideo = document.createElement("video");
+      remoteVideo.id = userId;
+      remoteVideo.autoplay = true;
+      remoteVideo.playsinline = true;
+      
+      // Add aspect ratio listener
+      addVideoLoadedListener(remoteVideo);
+      
+      // Create label
+      const label = document.createElement("div");
+      label.classList.add("user-label");
+      label.textContent = `User ${userId.substring(0, 5)}`;
+      
+      // Add to DOM
+      videoContainer.appendChild(remoteVideo);
+      videoContainer.appendChild(label);
+      
+      // Add status indicators
+      addStatusIndicators(videoContainer, userId);
+      
+      // Add to the appropriate container based on pinned state
+      if (window.pinnedVideoId) {
+        // If we're in pinned mode, create a sidebar version instead
+        const sidebarContainer = videoContainer.cloneNode(true);
+        const sidebarVideo = sidebarContainer.querySelector('video');
+        sidebarVideo.id = `sidebar-${userId}`;
+        sidebarContainer.id = `sidebar-container-${userId}`;
+        
+        // Set srcObject to the stream
+        sidebarVideo.srcObject = event.streams[0];
+        
+        // Add aspect ratio listener for sidebar video
+        addVideoLoadedListener(sidebarVideo);
+        
+        // Add pin button
+        addPinButton(sidebarContainer, `sidebar-${userId}`);
+        
+        // Add to sidebar
+        window.participantsSidebar.appendChild(sidebarContainer);
+        
+        // Still add the original container to the videos div but hide it
+        addPinButton(videoContainer, userId);
+        videoContainer.style.display = 'none';
+        window.videosDiv.appendChild(videoContainer);
+      } else {
+        // Normal mode - add to grid
+        addPinButton(videoContainer, userId);
+        window.videosDiv.appendChild(videoContainer);
+      }
+      
+      // Update grid layout
+      updateGridLayout();
+    }
+    
+    // Set the stream to the video
+    remoteVideo.srcObject = event.streams[0];
+    
+    // Play the video
+    remoteVideo.play().catch(e => console.error("Error playing remote video:", e));
+  };
+
+  return peer;
+}
+
+// Create a peer connection for screen sharing
+function createScreenPeer(userId) {
+  const peer = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  });
+
+  peer.onicecandidate = event => {
+    if (event.candidate) {
+      window.socket.emit("ice-candidate", {
+        to: userId,
+        candidate: event.candidate,
+        isScreenShare: true
+      });
+    }
+  };
+
+  peer.ontrack = event => {
+    // Check if video already exists
+    let videoContainer = document.getElementById(`screen-container-${userId}`);
+    let screenVideo = document.getElementById(`screen-${userId}`);
+    
+    if (!videoContainer) {
+      // Create new container for video
+      videoContainer = document.createElement("div");
+      videoContainer.id = `screen-container-${userId}`;
+      videoContainer.classList.add("video-item", "new-screen-share", "screen-share-container");
+      
+      // Create new video element
+      screenVideo = document.createElement("video");
+      screenVideo.id = `screen-${userId}`;
+      screenVideo.autoplay = true;
+      screenVideo.playsinline = true;
+      screenVideo.classList.add("screen-share");
+      
+      // Add screen share icon
+      const screenIcon = document.createElement("div");
+      screenIcon.classList.add("screen-share-icon");
+      screenIcon.innerHTML = '<span class="material-icons">screen_share</span>';
+      
+      // Add aspect ratio listener for screen sharing
+      addVideoLoadedListener(screenVideo);
+      
+      // Create label
+      const label = document.createElement("div");
+      label.classList.add("user-label");
+      label.textContent = `Screen: User ${userId.substring(0, 5)}`;
+      
+      // Add to DOM
+      videoContainer.appendChild(screenVideo);
+      videoContainer.appendChild(label);
+      videoContainer.appendChild(screenIcon);
+      
+      // Add to the appropriate container based on pinned state
+      if (window.pinnedVideoId) {
+        // If we're in pinned mode, create a sidebar version
+        const sidebarContainer = document.createElement("div");
+        sidebarContainer.id = `sidebar-screen-container-${userId}`;
+        sidebarContainer.classList.add("video-item", "screen-share-container");
+        
+        const sidebarVideo = document.createElement("video");
+        sidebarVideo.id = `sidebar-screen-${userId}`;
+        sidebarVideo.autoplay = true;
+        sidebarVideo.playsinline = true;
+        sidebarVideo.classList.add("screen-share");
+        
+        // Create sidebar label
+        const sidebarLabel = document.createElement("div");
+        sidebarLabel.classList.add("user-label");
+        sidebarLabel.textContent = `Screen: User ${userId.substring(0, 5)}`;
+        
+        // Clone the screen icon for sidebar
+        const sidebarIcon = screenIcon.cloneNode(true);
+        
+        // Set srcObject to the stream
+        sidebarVideo.srcObject = event.streams[0];
+        
+        // Add aspect ratio listener for sidebar screen
+        addVideoLoadedListener(sidebarVideo);
+        
+        // Add elements to sidebar container
+        sidebarContainer.appendChild(sidebarVideo);
+        sidebarContainer.appendChild(sidebarLabel);
+        sidebarContainer.appendChild(sidebarIcon);
+        
+        // Add pin button
+        addPinButton(sidebarContainer, `sidebar-screen-${userId}`);
+        
+        // Add to sidebar
+        window.participantsSidebar.appendChild(sidebarContainer);
+        
+        // Play the video
+        sidebarVideo.play().catch(e => console.error("Error playing sidebar screen video:", e));
+        
+        // Still add the original container but hide it
+        addPinButton(videoContainer, `screen-${userId}`);
+        videoContainer.style.display = 'none';
+        window.videosDiv.appendChild(videoContainer);
+      } else {
+        // Normal mode - add to grid
+        addPinButton(videoContainer, `screen-${userId}`);
+        window.videosDiv.appendChild(videoContainer);
+        
+        // Option to auto-pin remote screen shares
+        const autoPinRemoteScreenShare = false; // Set to true to enable auto-pinning of remote screen shares
+        if (autoPinRemoteScreenShare) {
+          setTimeout(() => {
+            // Add pinning animation
+            videoContainer.classList.add('pinning');
+            setTimeout(() => {
+              videoContainer.classList.remove('pinning');
+              pinVideo(`screen-${userId}`);
+            }, 300);
+          }, 500);
+        }
+      }
+      
+      // Remove animation class after it plays
+      setTimeout(() => {
+        videoContainer.classList.remove("new-screen-share");
+      }, 6000);
+      
+      // Update grid layout
+      updateGridLayout();
+      
+      // Announce new screen share for screen readers
+      announceToScreenReaders(`Screen sharing from User ${userId.substring(0, 5)} started`);
+    }
+    
+    // Set the stream to the video
+    screenVideo.srcObject = event.streams[0];
+    
+    // Play the video
+    screenVideo.play().catch(e => console.error("Error playing screen video:", e));
+  };
+
+  return peer;
+}
+
+// Set up all socket event listeners
+function setupSocketListeners() {
+  window.socket.on("user-connected", userId => {
+    console.log('User connected: ' + userId);
+    
+    // Update participant count
+    window.totalParticipants++;
+    updateParticipantCount();
+    
+    const peer = createPeer(userId);
+    window.peers[userId] = peer;
+
+    window.localStream.getTracks().forEach(track => {
+      peer.addTrack(track, window.localStream);
+    });
+
+    peer.createOffer().then(offer => {
+      peer.setLocalDescription(offer);
+      window.socket.emit("offer", { to: userId, offer });
+    });
+
+    // If we are currently sharing screen, also share with the new user
+    if (window.screenSharingActive && window.screenStream) {
+      shareScreenWithUser(userId);
+    }
+    
+    // Send the current user count to the newly connected user
+    window.socket.emit("peer-count", {
+      to: userId,
+      count: Object.keys(window.peers).length
+    });
+  });
+
+  // Handle receiving peer count from existing users
+  window.socket.on("peer-count", ({ count }) => {
+    console.log('Received peer count:', count);
+    // Add the count to our total participants (plus 1 for ourselves)
+    // We also need to make sure we don't double count if multiple users send counts
+    const currentPeers = Object.keys(window.peers).length;
+    
+    // If we've received a count from someone who is connected before we added them
+    // to our peers object, consider that number. Otherwise, use our own count.
+    if (count > currentPeers) {
+      window.totalParticipants = count + 1; // +1 for ourselves
+    } else {
+      window.totalParticipants = currentPeers + 1; // +1 for ourselves
+    }
+    
+    updateParticipantCount();
+  });
+
+  window.socket.on("offer", ({ from, offer, isScreenShare }) => {
+    let peer;
+    
+    if (isScreenShare) {
+      // This is a screen sharing offer
+      peer = createScreenPeer(from);
+      window.screenSharingPeers[from] = peer;
+    } else {
+      // This is a regular video offer
+      peer = createPeer(from);
+      window.peers[from] = peer;
+      
+      window.localStream.getTracks().forEach(track => {
+        peer.addTrack(track, window.localStream);
+      });
+    }
+
+    peer.setRemoteDescription(new RTCSessionDescription(offer)).then(() => {
+      return peer.createAnswer();
+    }).then(answer => {
+      peer.setLocalDescription(answer);
+      window.socket.emit("answer", { 
+        to: from, 
+        answer,
+        isScreenShare 
+      });
+    });
+  });
+
+  window.socket.on("answer", ({ from, answer, isScreenShare }) => {
+    if (isScreenShare && window.screenSharingPeers[from]) {
+      window.screenSharingPeers[from].setRemoteDescription(new RTCSessionDescription(answer));
+    } else if (!isScreenShare && window.peers[from]) {
+      window.peers[from].setRemoteDescription(new RTCSessionDescription(answer));
+    }
+  });
+
+  window.socket.on("ice-candidate", ({ from, candidate, isScreenShare }) => {
+    if (isScreenShare && window.screenSharingPeers[from]) {
+      window.screenSharingPeers[from].addIceCandidate(new RTCIceCandidate(candidate));
+    } else if (!isScreenShare && window.peers[from]) {
+      window.peers[from].addIceCandidate(new RTCIceCandidate(candidate));
+    }
+  });
+
+  window.socket.on("user-disconnected", userId => {
+    console.log('User disconnected: ' + userId);
+    
+    // Update participant count only if the peer exists
+    // to prevent decreasing count for duplicate disconnects
+    if (window.peers[userId]) {
+      window.totalParticipants = Math.max(1, window.totalParticipants - 1);
+      updateParticipantCount();
+    }
+    
+    // Check if the disconnected user was pinned
+    if (window.pinnedVideoId === userId || window.pinnedVideoId === `screen-${userId}`) {
+      unpinVideo();
+    }
+    
+    if (window.peers[userId]) {
+      window.peers[userId].close();
+      delete window.peers[userId];
+    }
+    if (window.screenSharingPeers[userId]) {
+      window.screenSharingPeers[userId].close();
+      delete window.screenSharingPeers[userId];
+    }
+
+    // Remove video container
+    const videoContainer = document.getElementById(`container-${userId}`);
+    if (videoContainer) {
+      videoContainer.remove();
+      // Update grid layout
+      updateGridLayout();
+    }
+    
+    // Remove screen share container
+    const screenContainer = document.getElementById(`screen-container-${userId}`);
+    if (screenContainer) {
+      screenContainer.remove();
+      // Update grid layout
+      updateGridLayout();
+    }
+  });
+
+  // Add event handler for when a user stops screen sharing
+  window.socket.on("user-stopped-screen-sharing", userId => {
+    // Check if the stopped screen share was pinned
+    if (window.pinnedVideoId === `screen-${userId}`) {
+      unpinVideo();
+    }
+    
+    if (window.screenSharingPeers[userId]) {
+      window.screenSharingPeers[userId].close();
+      delete window.screenSharingPeers[userId];
+    }
+    
+    // Remove screen container
+    const screenContainer = document.getElementById(`screen-container-${userId}`);
+    if (screenContainer) {
+      screenContainer.remove();
+      // Update grid layout
+      updateGridLayout();
+    }
+  });
+
+  window.socket.on("chat-message", ({ message, sender, senderName }) => {
+    addMessage(message, senderName || "User", false);
+  });
+
+  window.socket.on("mic-status-change", ({ from, isOn }) => {
+    updatePeerMicStatus(from, isOn);
+  });
+
+  window.socket.on("video-status-change", ({ from, isOn }) => {
+    updatePeerVideoStatus(from, isOn);
+  });
+}
+
+// Helper function to add chat messages
+function addMessage(message, sender, isSent) {
+  const messageElement = document.createElement("div");
+  messageElement.classList.add("message", isSent ? "message-sent" : "message-received");
+  
+  const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  messageElement.innerHTML = `
+    ${message}
+    <span class="message-meta">${sender} · ${time}</span>
+  `;
+  
+  window.chatMessages.appendChild(messageElement);
+  window.chatMessages.scrollTop = window.chatMessages.scrollHeight;
+  
+  // If chat is not visible, highlight the chat button
+  if (!window.chatVisible) {
+    window.chatToggleBtn.classList.add("active");
+  }
+}
+
+export {
+  setupSocketListeners,
+  createPeer,
+  createScreenPeer,
+  addMessage
+}; 
