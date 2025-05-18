@@ -8,6 +8,7 @@ const muteBtn = document.getElementById("muteBtn");
 const videoBtn = document.getElementById("videoBtn");
 const leaveBtn = document.getElementById("leaveBtn");
 const chatToggleBtn = document.getElementById("chatToggleBtn");
+const chatCollapseBtn = document.getElementById("chatCollapseBtn");
 const sidebar = document.getElementById("sidebar");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
@@ -15,6 +16,13 @@ const chatMessages = document.getElementById("chatMessages");
 const pinnedVideoWrapper = document.getElementById("pinnedVideoWrapper");
 const participantsSidebar = document.getElementById("participantsSidebar");
 const mainContent = document.querySelector(".main-content");
+const meetingTimeElement = document.getElementById("meetingTime");
+const participantCountElement = document.getElementById("participantCount");
+const headerToggle = document.getElementById("headerToggle");
+const controlsToggle = document.getElementById("controlsToggle");
+const header = document.querySelector(".header");
+const controls = document.querySelector(".controls");
+const controlsContainer = document.querySelector(".controls-container");
 
 let localStream;
 let screenStream;
@@ -27,6 +35,10 @@ let meetingStartTime = Date.now();
 let pinnedVideoId = null;
 let resizeTimeout = null;
 let cameraVideoTrack = null; // Store the original camera video track
+let meetingTimerInterval; // For tracking the meeting time
+let totalParticipants = 1; // Start with 1 (local user)
+let headerCollapsed = false;
+let controlsCollapsed = false;
 
 // Advanced audio constraints to reduce echo and noise
 const audioConstraints = {
@@ -34,6 +46,91 @@ const audioConstraints = {
   noiseSuppression: true,
   autoGainControl: true
 };
+
+// Toggle header (navbar) when the toggle button is clicked
+headerToggle.addEventListener("click", () => {
+  headerCollapsed = !headerCollapsed;
+  header.classList.toggle("collapsed", headerCollapsed);
+  
+  // Update the icon direction
+  const icon = headerToggle.querySelector(".material-icons");
+  icon.textContent = headerCollapsed ? "expand_less" : "expand_more";
+  
+  // Position the toggle button
+  if (headerCollapsed) {
+    headerToggle.style.top = "0px";
+  } else {
+    // Let it be positioned by CSS
+    headerToggle.style.top = "";
+  }
+  
+  // Update videos container height
+  updateVideoContainerHeight();
+});
+
+// Toggle controls when the toggle button is clicked
+controlsToggle.addEventListener("click", () => {
+  controlsCollapsed = !controlsCollapsed;
+  controls.classList.toggle("collapsed", controlsCollapsed);
+  controlsToggle.classList.toggle("collapsed", controlsCollapsed);
+  
+  // Update the icon direction
+  const icon = controlsToggle.querySelector(".material-icons");
+  icon.textContent = controlsCollapsed ? "expand_less" : "expand_more";
+  
+  // Position the toggle button
+  if (controlsCollapsed) {
+    controlsToggle.style.bottom = "0px";
+    // Make sure controls-container doesn't collapse
+    if (controlsContainer) {
+      controlsContainer.style.height = controlsToggle.offsetHeight + "px";
+      controlsContainer.classList.add("collapsed");
+    }
+  } else {
+    // Let it be positioned by CSS
+    controlsToggle.style.bottom = "";
+    // Reset container height
+    if (controlsContainer) {
+      controlsContainer.style.height = "";
+      controlsContainer.classList.remove("collapsed");
+    }
+  }
+  
+  // Update videos container height
+  updateVideoContainerHeight();
+});
+
+// Update video container height based on header and controls visibility
+function updateVideoContainerHeight() {
+  // Get the visible height of header and controls
+  const headerHeight = headerCollapsed ? 0 : (header.offsetHeight || 0);
+  const controlsHeight = controlsCollapsed ? 0 : (controls.offsetHeight || 0);
+  
+  // Add padding for the header toggle button (it's fixed positioned)
+  const topPadding = 30; // Height of the header toggle button
+  
+  // Calculate new max-height for videos container
+  const newHeight = `calc(100vh - ${headerHeight + controlsHeight + topPadding}px)`;
+  videosDiv.style.maxHeight = newHeight;
+  
+  // Add padding to the container for the toggle buttons
+  videosDiv.style.paddingTop = headerCollapsed ? `${topPadding}px` : '0';
+  // No bottom padding needed as control toggle is now at the right side
+  videosDiv.style.paddingBottom = '0';
+  
+  // Also update pinned video container if in pinned mode
+  if (mainContent.classList.contains("pinned-mode")) {
+    const pinnedContainer = document.querySelector(".pinned-video-container");
+    if (pinnedContainer) {
+      pinnedContainer.style.maxHeight = newHeight;
+      pinnedContainer.style.paddingTop = headerCollapsed ? `${topPadding}px` : '0';
+      pinnedContainer.style.paddingBottom = '0';
+    }
+  }
+  
+  // Update grid layout after a short delay to let transitions complete
+  setTimeout(updateGridLayout, 300);
+}
 
 // Add window resize event listener to update layout
 window.addEventListener('resize', () => {
@@ -43,8 +140,14 @@ window.addEventListener('resize', () => {
   }
   
   resizeTimeout = setTimeout(() => {
+    updateVideoContainerHeight();
     updateGridLayout();
   }, 300);
+});
+
+// Call updateVideoContainerHeight once when the page loads
+window.addEventListener('load', () => {
+  updateVideoContainerHeight();
 });
 
 // Improved function to update grid layout
@@ -108,12 +211,45 @@ function addVideoLoadedListener(videoElement) {
   });
 }
 
+// Start meeting timer
+function startMeetingTimer() {
+  // Initialize with current time
+  updateMeetingTimer();
+  
+  // Update timer every second
+  meetingTimerInterval = setInterval(updateMeetingTimer, 1000);
+}
+
+// Update the meeting timer display
+function updateMeetingTimer() {
+  const elapsedTime = Date.now() - meetingStartTime;
+  const seconds = Math.floor((elapsedTime / 1000) % 60);
+  const minutes = Math.floor((elapsedTime / (1000 * 60)) % 60);
+  const hours = Math.floor((elapsedTime / (1000 * 60 * 60)));
+  
+  meetingTimeElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// Update participant count in the UI
+function updateParticipantCount() {
+  participantCountElement.textContent = totalParticipants.toString();
+}
+
+// Initialize meeting UI components
+function initMeetingUI() {
+  startMeetingTimer();
+  updateParticipantCount();
+}
+
 // Create a wrapper for the local video
 navigator.mediaDevices.getUserMedia({ 
   video: true, 
   audio: audioConstraints 
 }).then(stream => {
   localStream = stream;
+  
+  // Initialize meeting UI elements
+  initMeetingUI();
   
   // Save the original camera video track for reference
   const videoTracks = stream.getVideoTracks();
@@ -138,53 +274,16 @@ navigator.mediaDevices.getUserMedia({
   // Add aspect ratio listener
   addVideoLoadedListener(localVideo);
   
-  // Add a label
-  const label = document.createElement("div");
-  label.classList.add("user-label");
-  label.textContent = "You";
+  // Create local video controls to replace the "You" label
+  const localControls = document.createElement("div");
+  localControls.classList.add("local-controls");
   
-  // Append elements
-  videoContainer.appendChild(localVideo);
-  videoContainer.appendChild(label);
-  
-  // Add pin button with tooltip
-  addPinButton(videoContainer, "local");
-  
-  // Add status indicators
-  addStatusIndicators(videoContainer, 'local');
-  updatePeerMicStatus('local', audioEnabled);
-  updatePeerVideoStatus('local', videoEnabled);
-  
-  // Add video controls
-  const videoControls = document.createElement('div');
-  videoControls.classList.add('video-controls');
-  
-  const toggleVideoBtn = document.createElement('button');
-  toggleVideoBtn.classList.add('video-control-btn');
-  toggleVideoBtn.innerHTML = '<span class="material-icons">videocam</span>';
-  toggleVideoBtn.title = 'Toggle video';
-  toggleVideoBtn.addEventListener('click', () => {
-    if (localStream) {
-      const videoTracks = localStream.getVideoTracks();
-      if (videoTracks.length > 0) {
-        videoEnabled = !videoEnabled;
-        videoTracks[0].enabled = videoEnabled;
-        videoBtn.innerHTML = videoEnabled ? 
-          '<span class="material-icons control-icon">videocam</span><span class="control-text">Stop Video</span>' : 
-          '<span class="material-icons control-icon">videocam_off</span><span class="control-text">Start Video</span>';
-        videoBtn.classList.toggle('active', !videoEnabled);
-        toggleVideoBtn.innerHTML = videoEnabled ? 
-          '<span class="material-icons">videocam</span>' : 
-          '<span class="material-icons">videocam_off</span>';
-      }
-    }
-  });
-  
-  const toggleAudioBtn = document.createElement('button');
-  toggleAudioBtn.classList.add('video-control-btn');
-  toggleAudioBtn.innerHTML = '<span class="material-icons">mic</span>';
-  toggleAudioBtn.title = 'Toggle audio';
-  toggleAudioBtn.addEventListener('click', () => {
+  // Create mic toggle button
+  const localMicBtn = document.createElement('button');
+  localMicBtn.classList.add('local-control-btn');
+  localMicBtn.innerHTML = '<span class="material-icons">mic</span>';
+  localMicBtn.title = 'Toggle microphone';
+  localMicBtn.addEventListener('click', () => {
     if (localStream) {
       const audioTracks = localStream.getAudioTracks();
       if (audioTracks.length > 0) {
@@ -194,16 +293,68 @@ navigator.mediaDevices.getUserMedia({
           '<span class="material-icons control-icon">mic</span><span class="control-text">Mute</span>' : 
           '<span class="material-icons control-icon">mic_off</span><span class="control-text">Unmute</span>';
         muteBtn.classList.toggle('active', !audioEnabled);
-        toggleAudioBtn.innerHTML = audioEnabled ? 
+        localMicBtn.innerHTML = audioEnabled ? 
           '<span class="material-icons">mic</span>' : 
           '<span class="material-icons">mic_off</span>';
+        
+        // Update status indicators
+        updatePeerMicStatus('local', audioEnabled);
+        
+        // Emit status change to others
+        socket.emit("mic-status-change", {
+          room: ROOM_ID,
+          isOn: audioEnabled
+        });
       }
     }
   });
   
-  videoControls.appendChild(toggleVideoBtn);
-  videoControls.appendChild(toggleAudioBtn);
-  videoContainer.appendChild(videoControls);
+  // Create camera toggle button
+  const localVideoBtn = document.createElement('button');
+  localVideoBtn.classList.add('local-control-btn');
+  localVideoBtn.innerHTML = '<span class="material-icons">videocam</span>';
+  localVideoBtn.title = 'Toggle camera';
+  localVideoBtn.addEventListener('click', () => {
+    if (localStream) {
+      const videoTracks = localStream.getVideoTracks();
+      if (videoTracks.length > 0) {
+        videoEnabled = !videoEnabled;
+        videoTracks[0].enabled = videoEnabled;
+        videoBtn.innerHTML = videoEnabled ? 
+          '<span class="material-icons control-icon">videocam</span><span class="control-text">Stop Video</span>' : 
+          '<span class="material-icons control-icon">videocam_off</span><span class="control-text">Start Video</span>';
+        videoBtn.classList.toggle('active', !videoEnabled);
+        localVideoBtn.innerHTML = videoEnabled ? 
+          '<span class="material-icons">videocam</span>' : 
+          '<span class="material-icons">videocam_off</span>';
+        
+        // Update status indicators
+        updatePeerVideoStatus('local', videoEnabled);
+        
+        // Emit status change to others
+        socket.emit("video-status-change", {
+          room: ROOM_ID,
+          isOn: videoEnabled
+        });
+      }
+    }
+  });
+  
+  // Add buttons to local controls
+  localControls.appendChild(localMicBtn);
+  localControls.appendChild(localVideoBtn);
+  
+  // Append elements
+  videoContainer.appendChild(localVideo);
+  videoContainer.appendChild(localControls);
+  
+  // Add pin button with tooltip
+  addPinButton(videoContainer, "local");
+  
+  // Add status indicators
+  addStatusIndicators(videoContainer, 'local');
+  updatePeerMicStatus('local', audioEnabled);
+  updatePeerVideoStatus('local', videoEnabled);
   
   videosDiv.appendChild(videoContainer);
   
@@ -289,6 +440,13 @@ chatToggleBtn.addEventListener("click", () => {
   chatToggleBtn.classList.toggle('active', chatVisible);
 });
 
+// Collapse chat sidebar from within
+chatCollapseBtn.addEventListener("click", () => {
+  chatVisible = false;
+  sidebar.classList.add("sidebar-hidden");
+  chatToggleBtn.classList.remove('active');
+});
+
 // Chat functionality
 sendBtn.addEventListener("click", sendMessage);
 chatInput.addEventListener("keypress", (e) => {
@@ -336,6 +494,12 @@ socket.on("chat-message", ({ message, sender, senderName }) => {
 });
 
 socket.on("user-connected", userId => {
+  console.log('User connected: ' + userId);
+  
+  // Update participant count
+  totalParticipants++;
+  updateParticipantCount();
+  
   const peer = createPeer(userId);
   peers[userId] = peer;
 
@@ -400,6 +564,14 @@ socket.on("ice-candidate", ({ from, candidate, isScreenShare }) => {
 });
 
 socket.on("user-disconnected", userId => {
+  console.log('User disconnected: ' + userId);
+  
+  // Update participant count
+  if (totalParticipants > 1) {
+    totalParticipants--;
+    updateParticipantCount();
+  }
+  
   // Check if the disconnected user was pinned
   if (pinnedVideoId === userId || pinnedVideoId === `screen-${userId}`) {
     unpinVideo();
@@ -660,6 +832,7 @@ function pinVideo(videoId) {
   
   // Check if this is a screen share
   const isScreenShare = videoId === 'local-screen' || videoId.startsWith('screen-');
+  const isLocalScreenShare = videoId === 'local-screen';
   
   // Get the original video element to access its stream
   const originalVideoId = videoId.startsWith('screen-') ? videoId : videoId;
@@ -672,6 +845,11 @@ function pinVideo(videoId) {
   
   // Get the source stream
   const stream = originalVideo.srcObject;
+  
+  // For local screen share, make sure we save the stream for when we unpin
+  if (isLocalScreenShare) {
+    screenStream = stream;
+  }
   
   // Find the container
   const videoContainer = document.getElementById(
@@ -765,6 +943,19 @@ function pinVideo(videoId) {
 function unpinVideo() {
   if (!pinnedVideoId) return;
   
+  // Save pinned ID before resetting it
+  const prevPinnedId = pinnedVideoId;
+  const isLocalScreenShare = prevPinnedId === "local-screen";
+  
+  // If we're unpinning local screen share, make sure we save the stream
+  if (isLocalScreenShare) {
+    const pinnedVideo = document.getElementById(`pinned-${prevPinnedId}`);
+    if (pinnedVideo && pinnedVideo.srcObject && (!screenStream || !screenStream.active)) {
+      console.log("Saving screen stream from pinned video");
+      screenStream = pinnedVideo.srcObject;
+    }
+  }
+  
   // Find the original container
   const videoId = pinnedVideoId;
   const originalContainerId = videoId.startsWith('screen-') 
@@ -795,6 +986,12 @@ function unpinVideo() {
   hiddenContainers.forEach(container => {
     container.style.display = '';
     container.dataset.inSidebar = '';
+    
+    // Make sure all videos in these containers are playing
+    const video = container.querySelector('video');
+    if (video && video.srcObject) {
+      video.play().catch(e => console.error("Error playing restored video:", e));
+    }
   });
   
   // Move all videos back to the grid and update layout
@@ -803,10 +1000,13 @@ function unpinVideo() {
   // Disable pinned mode
   mainContent.classList.remove('pinned-mode');
   
-  // Update grid layout after a brief delay to ensure DOM update
+  // Force visibility check - use a slightly longer delay for local screen share
   setTimeout(() => {
+    // Check for any videos that might still be hidden
+    checkAndRestoreVideos();
+    // Update grid layout
     updateGridLayout();
-  }, 50);
+  }, isLocalScreenShare ? 150 : 100);
   
   // Announce for screen readers
   announceToScreenReaders("Video unpinned");
@@ -1058,6 +1258,63 @@ function moveOtherVideosToSidebar(excludeVideoId) {
 function moveAllVideosToGrid() {
   // Remove all cloned videos from the sidebar
   participantsSidebar.innerHTML = '';
+  
+  // Ensure all containers in the grid are visible
+  const allContainers = document.querySelectorAll('.videos-container .video-item');
+  allContainers.forEach(container => {
+    container.style.display = '';
+    
+    // Make sure videos are playing
+    const video = container.querySelector('video');
+    if (video && video.srcObject) {
+      video.play().catch(e => console.error("Error playing video in grid:", e));
+    }
+  });
+  
+  // Check if we need to recreate the local screen share container
+  if (screenSharingActive && !document.getElementById("local-screen-container")) {
+    console.log("Recreating missing local screen share container in grid");
+    
+    // Create a container for the screen video
+    const videoContainer = document.createElement("div");
+    videoContainer.id = "local-screen-container";
+    videoContainer.classList.add("video-item", "screen-share-container");
+    
+    // Create a local video element for screen preview
+    const screenVideo = document.createElement("video");
+    screenVideo.id = "local-screen";
+    screenVideo.muted = true;
+    screenVideo.srcObject = screenStream;
+    screenVideo.autoplay = true;
+    screenVideo.playsinline = true;
+    screenVideo.classList.add("screen-share");
+    
+    // Add screen share icon
+    const screenIcon = document.createElement("div");
+    screenIcon.classList.add("screen-share-icon");
+    screenIcon.innerHTML = '<span class="material-icons">screen_share</span>';
+    
+    // Add aspect ratio listener for screen sharing
+    addVideoLoadedListener(screenVideo);
+    
+    // Create label
+    const label = document.createElement("div");
+    label.classList.add("user-label");
+    label.textContent = "Your Screen";
+    
+    // Append elements
+    videoContainer.appendChild(screenVideo);
+    videoContainer.appendChild(label);
+    videoContainer.appendChild(screenIcon);
+    
+    // Add pin button and screen share badge
+    addPinButton(videoContainer, "local-screen");
+    
+    // Add to grid
+    videosDiv.appendChild(videoContainer);
+    
+    console.log("Local screen share container successfully added to grid");
+  }
   
   // Make sure to call updateGridLayout to refresh the grid
   setTimeout(() => {
@@ -1664,6 +1921,12 @@ function checkAndRestoreVideos() {
     }).catch(err => {
       console.error("Failed to restore local video:", err);
     });
+  } else if (localContainer && localContainer.style.display === 'none') {
+    // Make sure the container is visible even if the stream is active
+    localContainer.style.display = '';
+    if (localVideo && localVideo.srcObject) {
+      localVideo.play().catch(e => console.error("Error playing local video:", e));
+    }
   }
   
   // Also check remote videos
@@ -1675,6 +1938,87 @@ function checkAndRestoreVideos() {
       // Make the container visible at least
       if (remoteContainer) {
         remoteContainer.style.display = '';
+      }
+    } else if (remoteContainer && remoteContainer.style.display === 'none') {
+      // Make the container visible even if the stream is active
+      remoteContainer.style.display = '';
+      if (remoteVideo && remoteVideo.srcObject) {
+        remoteVideo.play().catch(e => console.error("Error playing remote video:", e));
+      }
+    }
+  });
+  
+  // Check for local screen share
+  if (screenSharingActive) {
+    const localScreenVideo = document.getElementById("local-screen");
+    const localScreenContainer = document.getElementById("local-screen-container");
+    
+    if (localScreenContainer && localScreenContainer.style.display === 'none' && !pinnedVideoId) {
+      // The screen share should be visible in grid mode but is hidden
+      localScreenContainer.style.display = '';
+      
+      // Make sure video is playing
+      if (localScreenVideo && localScreenVideo.srcObject) {
+        localScreenVideo.play().catch(e => console.error("Error playing local screen share:", e));
+      }
+      
+      console.log("Local screen share restored to grid");
+    } else if (!localScreenContainer && !pinnedVideoId && screenStream) {
+      // Screen share container is missing but we have an active screen stream
+      // and we're not in pinned mode - recreate the container
+      
+      console.log("Recreating missing local screen share container");
+      
+      // Create a container for the screen video
+      const videoContainer = document.createElement("div");
+      videoContainer.id = "local-screen-container";
+      videoContainer.classList.add("video-item", "screen-share-container");
+      
+      // Create a local video element for screen preview
+      const screenVideo = document.createElement("video");
+      screenVideo.id = "local-screen";
+      screenVideo.muted = true;
+      screenVideo.srcObject = screenStream;
+      screenVideo.autoplay = true;
+      screenVideo.playsinline = true;
+      screenVideo.classList.add("screen-share");
+      
+      // Add screen share icon
+      const screenIcon = document.createElement("div");
+      screenIcon.classList.add("screen-share-icon");
+      screenIcon.innerHTML = '<span class="material-icons">screen_share</span>';
+      
+      // Add aspect ratio listener for screen sharing
+      addVideoLoadedListener(screenVideo);
+      
+      // Create label
+      const label = document.createElement("div");
+      label.classList.add("user-label");
+      label.textContent = "Your Screen";
+      
+      // Append elements
+      videoContainer.appendChild(screenVideo);
+      videoContainer.appendChild(label);
+      videoContainer.appendChild(screenIcon);
+      
+      // Add pin button and screen share badge
+      addPinButton(videoContainer, "local-screen");
+      
+      // Add to grid
+      videosDiv.appendChild(videoContainer);
+      
+      console.log("Local screen share container recreated");
+    }
+  }
+  
+  // Also check remote screen share containers if they exist
+  const screenContainers = document.querySelectorAll('[id^="screen-container-"]');
+  screenContainers.forEach(container => {
+    if (container.style.display === 'none' && !pinnedVideoId) {
+      container.style.display = '';
+      const video = container.querySelector('video');
+      if (video && video.srcObject) {
+        video.play().catch(e => console.error("Error playing screen share:", e));
       }
     }
   });
@@ -1818,6 +2162,25 @@ screenShareBtn.addEventListener("click", () => {
     });
 });
 
+// Add event listener for stopping screen sharing
+stopScreenShareBtn.addEventListener("click", () => {
+  if (!screenSharingActive) return;
+  
+  // Add visual feedback
+  stopScreenShareBtn.classList.add('stopping');
+  
+  // Announce to screen readers
+  announceToScreenReaders("Stopping screen sharing");
+  
+  // Stop screen sharing
+  stopScreenSharing();
+  
+  // Remove visual feedback after a short delay
+  setTimeout(() => {
+    stopScreenShareBtn.classList.remove('stopping');
+  }, 500);
+});
+
 // Modify stopScreenSharing to also check for video visibility after completion
 function stopScreenSharing() {
   if (!screenSharingActive) return;
@@ -1855,6 +2218,12 @@ function stopScreenSharing() {
   const localVideoContainer = document.getElementById("container-local");
   if (localVideoContainer) {
     localVideoContainer.style.display = '';
+    
+    // Play the video
+    const localVideo = document.getElementById("local");
+    if (localVideo && localVideo.srcObject) {
+      localVideo.play().catch(e => console.error("Error playing local video after screen sharing:", e));
+    }
   }
   
   // IMPORTANT: Completely recreate the local video stream
@@ -1958,8 +2327,13 @@ function stopScreenSharing() {
   screenShareBtn.classList.remove('active');
   stopScreenShareBtn.disabled = true;
   
-  // Check again after a short delay
-  setTimeout(checkAndRestoreVideos, 1000);
+  // Ensure all video containers are visible
+  setTimeout(() => {
+    // Check all videos for visibility issues
+    checkAndRestoreVideos();
+    // Make sure grid layout is updated properly
+    updateGridLayout();
+  }, 200);
 }
 
 function shareScreenWithUser(userId) {

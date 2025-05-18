@@ -5,16 +5,27 @@
   <title>Group Video Chat</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
 </head>
 <body>
   <div class="container">
     <div class="main-content">
       <div class="header">
         <h2>Darpan</h2>
-        <button id="chatToggleBtn" class="control-btn">
-          <span class="material-icons control-icon">chat</span>
-        </button>
+        <div class="header-controls">
+          <div class="meeting-info">
+            <span class="meeting-time" id="meetingTime">00:00:00</span>
+            <span class="meeting-participants" id="participantCount">0</span>
+            <span class="material-icons">people</span>
+          </div>
+          <button id="chatToggleBtn" class="control-btn" title="Toggle Chat">
+            <span class="material-icons control-icon">chat</span>
+          </button>
+        </div>
       </div>
+      <button id="headerToggle" class="header-toggle" title="Toggle Navbar">
+        <span class="material-icons">expand_more</span>
+      </button>
       
       <!-- Grid view (default mode) -->
       <div id="videos" class="videos-container"></div>
@@ -30,30 +41,35 @@
         <!-- Other videos will be moved here -->
       </div>
       
-      <div class="controls">
-        <button id="muteBtn" class="control-btn">
-          <span class="material-icons control-icon">mic</span>
-          <span class="control-text">Mute</span>
-        </button>
-        
-        <button id="videoBtn" class="control-btn">
-          <span class="material-icons control-icon">videocam</span>
-          <span class="control-text">Stop Video</span>
-        </button>
-        
-        <button id="screenShareBtn" class="control-btn">
-          <span class="material-icons control-icon">screen_share</span>
-          <span class="control-text">Share Screen</span>
-        </button>
-        
-        <button id="stopScreenShareBtn" class="control-btn" disabled>
-          <span class="material-icons control-icon">stop_screen_share</span>
-          <span class="control-text">Stop Share</span>
-        </button>
-        
-        <button id="leaveBtn" class="control-btn danger">
-          <span class="material-icons control-icon">call_end</span>
-          <span class="control-text">Leave</span>
+      <div class="controls-container" style="position: relative;">
+        <div class="controls">
+          <button id="muteBtn" class="control-btn">
+            <span class="material-icons control-icon">mic</span>
+            <span class="control-text">Mute</span>
+          </button>
+          
+          <button id="videoBtn" class="control-btn">
+            <span class="material-icons control-icon">videocam</span>
+            <span class="control-text">Stop Video</span>
+          </button>
+          
+          <button id="screenShareBtn" class="control-btn">
+            <span class="material-icons control-icon">screen_share</span>
+            <span class="control-text">Share Screen</span>
+          </button>
+          
+          <button id="stopScreenShareBtn" class="control-btn" disabled>
+            <span class="material-icons control-icon">stop_screen_share</span>
+            <span class="control-text">Stop Share</span>
+          </button>
+          
+          <button id="leaveBtn" class="control-btn danger">
+            <span class="material-icons control-icon">call_end</span>
+            <span class="control-text">Leave</span>
+          </button>
+        </div>
+        <button id="controlsToggle" class="controls-toggle" title="Toggle Controls">
+          <span class="material-icons">expand_more</span>
         </button>
       </div>
     </div>
@@ -62,6 +78,9 @@
       <div class="chat-area">
         <div class="header">
           <h2>Chat</h2>
+          <button id="chatCollapseBtn" class="chat-collapse-btn" title="Collapse Chat">
+            <span class="material-icons">close</span>
+          </button>
         </div>
         
         <div id="chatMessages" class="chat-messages"></div>
