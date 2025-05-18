@@ -1,0 +1,104 @@
+body {
+  background-color: #f0f2f5;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.rating-container {
+  max-width: 600px;
+  margin: 50px auto;
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.logo {
+  font-size: 1.8rem;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+.thank-you {
+  font-size: 1.4rem;
+  margin: 10px 0 30px;
+  color: #2c3e50;
+}
+
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin: 30px 0;
+}
+
+.star {
+  font-size: 40px;
+  cursor: pointer;
+  color: #e0e0e0;
+  transition: all 0.2s;
+}
+
+.star:hover, .star.active {
+  color: #ffb400;
+  transform: scale(1.2);
+}
+
+.rating-label {
+  height: 24px;
+  font-size: 16px;
+  color: #2c3e50;
+  margin: 15px 0;
+}
+
+.feedback-input {
+  width: 100%;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin: 20px 0;
+  font-family: inherit;
+  font-size: 16px;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.submit-btn {
+  background: #4285f4;
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-btn:hover {
+  background: #2b6bed;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.home-link {
+  display: inline-block;
+  margin-top: 20px;
+  color: #4285f4;
+  text-decoration: none;
+}
+
+.home-link:hover {
+  text-decoration: underline;
+}
+
+.thank-you-message {
+  display: none;
+  font-size: 20px;
+  color: #43a047;
+  margin: 30px 0;
+} 
+ 

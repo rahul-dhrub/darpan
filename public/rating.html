@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rate Your Experience - Mentro Meet</title>
+  <link rel="stylesheet" href="rating.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+</head>
+<body>
+  <div class="rating-container">
+    <div class="logo">Mentro Meet</div>
+    <h2 class="thank-you">Thank you for using our service!</h2>
+    <p>Please rate your experience with us today</p>
+    
+    <div class="rating-stars">
+      <span class="material-icons star" data-value="1">star</span>
+      <span class="material-icons star" data-value="2">star</span>
+      <span class="material-icons star" data-value="3">star</span>
+      <span class="material-icons star" data-value="4">star</span>
+      <span class="material-icons star" data-value="5">star</span>
+    </div>
+    
+    <div class="rating-label" id="ratingLabel"></div>
+    
+    <textarea class="feedback-input" placeholder="Please share your thoughts or suggestions for improvement..."></textarea>
+    
+    <button class="submit-btn" id="submitRating">Submit Feedback</button>
+    
+    <div class="thank-you-message" id="thankYouMessage">
+      Thank you for your feedback! We appreciate your input.
+    </div>
+    
+    <a href="/" class="home-link">Return to Home</a>
+  </div>
+  
+  <script src="rating.js"></script>
+</body>
+</html> 

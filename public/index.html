@@ -3,340 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <title>Group Video Chat</title>
-  <style>
-    video { width: 300px; margin: 5px; border: 1px solid #444; }
-    .screen-share { 
-      width: 400px; 
-      border: 2px solid #43a047; 
-      border-radius: 8px;
-    }
-    #controls { margin: 15px 0; }
-    button {
-      padding: 8px 15px;
-      background: #4285f4;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-right: 10px;
-    }
-    button:hover {
-      background: #3367d6;
-    }
-    button:disabled {
-      background: #888;
-      cursor: not-allowed;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 </head>
 <body>
-  <h2>Group Video Chat</h2>
-  <div id="controls">
-    <button id="muteBtn">Mute Audio</button>
-    <button id="screenShareBtn">Share Screen</button>
-    <button id="stopScreenShareBtn" disabled>Stop Sharing</button>
+  <div class="container">
+    <div class="main-content">
+      <div class="header">
+        <h2>Mentro Meet</h2>
+        <button id="chatToggleBtn" class="control-btn">
+          <span class="material-icons control-icon">chat</span>
+        </button>
+      </div>
+      
+      <!-- Grid view (default mode) -->
+      <div id="videos" class="videos-container"></div>
+      
+      <!-- Pinned view -->
+      <div class="pinned-video-container">
+        <div class="pinned-video-wrapper" id="pinnedVideoWrapper">
+          <!-- Pinned video will be moved here -->
+        </div>
+      </div>
+      
+      <div class="participants-sidebar" id="participantsSidebar">
+        <!-- Other videos will be moved here -->
+      </div>
+      
+      <div class="controls">
+        <button id="muteBtn" class="control-btn">
+          <span class="material-icons control-icon">mic</span>
+          <span class="control-text">Mute</span>
+        </button>
+        
+        <button id="videoBtn" class="control-btn">
+          <span class="material-icons control-icon">videocam</span>
+          <span class="control-text">Stop Video</span>
+        </button>
+        
+        <button id="screenShareBtn" class="control-btn">
+          <span class="material-icons control-icon">screen_share</span>
+          <span class="control-text">Share Screen</span>
+        </button>
+        
+        <button id="stopScreenShareBtn" class="control-btn" disabled>
+          <span class="material-icons control-icon">stop_screen_share</span>
+          <span class="control-text">Stop Share</span>
+        </button>
+        
+        <button id="leaveBtn" class="control-btn danger">
+          <span class="material-icons control-icon">call_end</span>
+          <span class="control-text">Leave</span>
+        </button>
+      </div>
+    </div>
+    
+    <div id="sidebar" class="sidebar sidebar-hidden">
+      <div class="chat-area">
+        <div class="header">
+          <h2>Chat</h2>
+        </div>
+        
+        <div id="chatMessages" class="chat-messages"></div>
+        
+        <div class="chat-input-area">
+          <textarea id="chatInput" class="chat-input" placeholder="Type a message..."></textarea>
+          <button id="sendBtn" class="send-btn">
+            <span class="material-icons">send</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="videos"></div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const ROOM_ID = "group-room";
-    const peers = {};
-    const videosDiv = document.getElementById("videos");
-    const screenShareBtn = document.getElementById("screenShareBtn");
-    const stopScreenShareBtn = document.getElementById("stopScreenShareBtn");
-    const muteBtn = document.getElementById("muteBtn");
-
-    const localVideo = document.createElement("video");
-    localVideo.muted = true;
-    videosDiv.appendChild(localVideo);
-
-    let localStream;
-    let screenStream;
-    let screenSharingPeers = {};
-    let screenSharingActive = false;
-    let audioEnabled = true;
-
-    // Advanced audio constraints to reduce echo and noise
-    const audioConstraints = {
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true
-    };
-
-    navigator.mediaDevices.getUserMedia({ 
-      video: true, 
-      audio: audioConstraints 
-    }).then(stream => {
-      localStream = stream;
-      localVideo.srcObject = stream;
-      localVideo.play();
-
-      socket.emit("join-room", ROOM_ID);
-
-      // Audio mute toggle
-      muteBtn.addEventListener("click", () => {
-        if (localStream) {
-          const audioTracks = localStream.getAudioTracks();
-          if (audioTracks.length > 0) {
-            audioEnabled = !audioEnabled;
-            audioTracks[0].enabled = audioEnabled;
-            muteBtn.textContent = audioEnabled ? "Mute Audio" : "Unmute Audio";
-          }
-        }
-      });
-    });
-
-    socket.on("user-connected", userId => {
-      const peer = createPeer(userId);
-      peers[userId] = peer;
-
-      localStream.getTracks().forEach(track => {
-        peer.addTrack(track, localStream);
-      });
-
-      peer.createOffer().then(offer => {
-        peer.setLocalDescription(offer);
-        socket.emit("offer", { to: userId, offer });
-      });
-
-      // If we are currently sharing screen, also share with the new user
-      if (screenSharingActive && screenStream) {
-        shareScreenWithUser(userId);
-      }
-    });
-
-    socket.on("offer", ({ from, offer, isScreenShare }) => {
-      let peer;
-      
-      if (isScreenShare) {
-        // This is a screen sharing offer
-        peer = createScreenPeer(from);
-        screenSharingPeers[from] = peer;
-      } else {
-        // This is a regular video offer
-        peer = createPeer(from);
-        peers[from] = peer;
-        
-        localStream.getTracks().forEach(track => {
-          peer.addTrack(track, localStream);
-        });
-      }
-
-      peer.setRemoteDescription(new RTCSessionDescription(offer)).then(() => {
-        return peer.createAnswer();
-      }).then(answer => {
-        peer.setLocalDescription(answer);
-        socket.emit("answer", { 
-          to: from, 
-          answer,
-          isScreenShare 
-        });
-      });
-    });
-
-    socket.on("answer", ({ from, answer, isScreenShare }) => {
-      if (isScreenShare && screenSharingPeers[from]) {
-        screenSharingPeers[from].setRemoteDescription(new RTCSessionDescription(answer));
-      } else if (!isScreenShare && peers[from]) {
-        peers[from].setRemoteDescription(new RTCSessionDescription(answer));
-      }
-    });
-
-    socket.on("ice-candidate", ({ from, candidate, isScreenShare }) => {
-      if (isScreenShare && screenSharingPeers[from]) {
-        screenSharingPeers[from].addIceCandidate(new RTCIceCandidate(candidate));
-      } else if (!isScreenShare && peers[from]) {
-        peers[from].addIceCandidate(new RTCIceCandidate(candidate));
-      }
-    });
-
-    socket.on("user-disconnected", userId => {
-      if (peers[userId]) {
-        peers[userId].close();
-        delete peers[userId];
-      }
-      if (screenSharingPeers[userId]) {
-        screenSharingPeers[userId].close();
-        delete screenSharingPeers[userId];
-      }
-
-      const video = document.getElementById(userId);
-      if (video) video.remove();
-      
-      const screenVideo = document.getElementById(`screen-${userId}`);
-      if (screenVideo) screenVideo.remove();
-    });
-
-    // Add new event handler for when a user stops screen sharing
-    socket.on("user-stopped-screen-sharing", userId => {
-      if (screenSharingPeers[userId]) {
-        screenSharingPeers[userId].close();
-        delete screenSharingPeers[userId];
-      }
-      
-      const screenVideo = document.getElementById(`screen-${userId}`);
-      if (screenVideo) screenVideo.remove();
-    });
-
-    function createPeer(userId) {
-      const peer = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-      });
-
-      peer.onicecandidate = event => {
-        if (event.candidate) {
-          socket.emit("ice-candidate", {
-            to: userId,
-            candidate: event.candidate,
-            isScreenShare: false
-          });
-        }
-      };
-
-      peer.ontrack = event => {
-        let remoteVideo = document.getElementById(userId);
-        if (!remoteVideo) {
-          remoteVideo = document.createElement("video");
-          remoteVideo.id = userId;
-          remoteVideo.autoplay = true;
-          videosDiv.appendChild(remoteVideo);
-        }
-        remoteVideo.srcObject = event.streams[0];
-      };
-
-      return peer;
-    }
-
-    function createScreenPeer(userId) {
-      const peer = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-      });
-
-      peer.onicecandidate = event => {
-        if (event.candidate) {
-          socket.emit("ice-candidate", {
-            to: userId,
-            candidate: event.candidate,
-            isScreenShare: true
-          });
-        }
-      };
-
-      peer.ontrack = event => {
-        let screenVideo = document.getElementById(`screen-${userId}`);
-        if (!screenVideo) {
-          screenVideo = document.createElement("video");
-          screenVideo.id = `screen-${userId}`;
-          screenVideo.autoplay = true;
-          screenVideo.classList.add("screen-share");
-          videosDiv.appendChild(screenVideo);
-        }
-        screenVideo.srcObject = event.streams[0];
-      };
-
-      return peer;
-    }
-
-    // Screen sharing functionality
-    screenShareBtn.addEventListener("click", () => {
-      if (screenSharingActive) return;
-      
-      navigator.mediaDevices.getDisplayMedia({ 
-        video: true,
-        audio: false // Disable audio for screen sharing to prevent echo
-      })
-        .then(stream => {
-          screenStream = stream;
-          screenSharingActive = true;
-          
-          // Create a local video element for screen preview
-          const screenVideo = document.createElement("video");
-          screenVideo.id = "local-screen";
-          screenVideo.muted = true;
-          screenVideo.srcObject = screenStream;
-          screenVideo.play();
-          screenVideo.classList.add("screen-share");
-          videosDiv.appendChild(screenVideo);
-          
-          // Send screen to all connected peers
-          Object.keys(peers).forEach(userId => {
-            shareScreenWithUser(userId);
-          });
-          
-          // Listen for the screen sharing to end
-          screenStream.getVideoTracks()[0].onended = () => {
-            stopScreenSharing();
-          };
-          
-          screenShareBtn.disabled = true;
-          stopScreenShareBtn.disabled = false;
-        })
-        .catch(error => {
-          console.error("Error sharing screen:", error);
-        });
-    });
-    
-    stopScreenShareBtn.addEventListener("click", stopScreenSharing);
-    
-    function stopScreenSharing() {
-      if (!screenSharingActive) return;
-      
-      // Stop all screen tracks
-      if (screenStream) {
-        screenStream.getTracks().forEach(track => track.stop());
-        screenStream = null;
-      }
-      
-      // Close all screen sharing peer connections
-      Object.values(screenSharingPeers).forEach(peer => peer.close());
-      screenSharingPeers = {};
-      
-      // Remove screen preview
-      const localScreen = document.getElementById("local-screen");
-      if (localScreen) localScreen.remove();
-      
-      // Notify others that screen sharing has stopped
-      socket.emit("screen-sharing-stopped", ROOM_ID);
-      
-      screenSharingActive = false;
-      screenShareBtn.disabled = false;
-      stopScreenShareBtn.disabled = true;
-    }
-    
-    function shareScreenWithUser(userId) {
-      const peer = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-      });
-      
-      screenSharingPeers[userId] = peer;
-      
-      peer.onicecandidate = event => {
-        if (event.candidate) {
-          socket.emit("ice-candidate", {
-            to: userId,
-            candidate: event.candidate,
-            isScreenShare: true
-          });
-        }
-      };
-      
-      // Add screen track to peer connection
-      screenStream.getTracks().forEach(track => {
-        peer.addTrack(track, screenStream);
-      });
-      
-      // Create and send offer
-      peer.createOffer().then(offer => {
-        peer.setLocalDescription(offer);
-        socket.emit("offer", { 
-          to: userId, 
-          offer,
-          isScreenShare: true 
-        });
-      });
-    }
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>

@@ -46,6 +46,32 @@ io.on("connection", socket => {
     socket.on("screen-sharing-stopped", roomId => {
       socket.to(roomId).emit("user-stopped-screen-sharing", socket.id);
     });
+
+    socket.on("chat-message", data => {
+      socket.to(data.room).emit("chat-message", {
+        message: data.message,
+        sender: socket.id,
+        senderName: `User ${socket.id.substring(0, 5)}`
+      });
+    });
+    
+    // Handle mic status changes
+    socket.on("mic-status-change", data => {
+      console.log(`Mic status change from ${socket.id}: ${data.isOn ? 'on' : 'off'}`);
+      socket.to(data.room).emit("mic-status-change", {
+        userId: socket.id, // Use the actual socket.id
+        isOn: data.isOn
+      });
+    });
+    
+    // Handle video status changes
+    socket.on("video-status-change", data => {
+      console.log(`Video status change from ${socket.id}: ${data.isOn ? 'on' : 'off'}`);
+      socket.to(data.room).emit("video-status-change", {
+        userId: socket.id, // Use the actual socket.id
+        isOn: data.isOn
+      });
+    });
   });
 });
 
