@@ -32,6 +32,7 @@
 <body>
   <h2>Group Video Chat</h2>
   <div id="controls">
+    <button id="muteBtn">Mute Audio</button>
     <button id="screenShareBtn">Share Screen</button>
     <button id="stopScreenShareBtn" disabled>Stop Sharing</button>
   </div>
@@ -45,6 +46,7 @@
     const videosDiv = document.getElementById("videos");
     const screenShareBtn = document.getElementById("screenShareBtn");
     const stopScreenShareBtn = document.getElementById("stopScreenShareBtn");
+    const muteBtn = document.getElementById("muteBtn");
 
     const localVideo = document.createElement("video");
     localVideo.muted = true;
@@ -54,13 +56,36 @@
     let screenStream;
     let screenSharingPeers = {};
     let screenSharingActive = false;
+    let audioEnabled = true;
 
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+    // Advanced audio constraints to reduce echo and noise
+    const audioConstraints = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true
+    };
+
+    navigator.mediaDevices.getUserMedia({ 
+      video: true, 
+      audio: audioConstraints 
+    }).then(stream => {
       localStream = stream;
       localVideo.srcObject = stream;
       localVideo.play();
 
       socket.emit("join-room", ROOM_ID);
+
+      // Audio mute toggle
+      muteBtn.addEventListener("click", () => {
+        if (localStream) {
+          const audioTracks = localStream.getAudioTracks();
+          if (audioTracks.length > 0) {
+            audioEnabled = !audioEnabled;
+            audioTracks[0].enabled = audioEnabled;
+            muteBtn.textContent = audioEnabled ? "Mute Audio" : "Unmute Audio";
+          }
+        }
+      });
     });
 
     socket.on("user-connected", userId => {
@@ -218,7 +243,10 @@
     screenShareBtn.addEventListener("click", () => {
       if (screenSharingActive) return;
       
-      navigator.mediaDevices.getDisplayMedia({ video: true })
+      navigator.mediaDevices.getDisplayMedia({ 
+        video: true,
+        audio: false // Disable audio for screen sharing to prevent echo
+      })
         .then(stream => {
           screenStream = stream;
           screenSharingActive = true;
