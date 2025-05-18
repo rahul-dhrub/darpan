@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Group Video Chat</title>
+  <style>
+    video { width: 300px; margin: 5px; border: 1px solid #444; }
+  </style>
+</head>
+<body>
+  <h2>Group Video Chat</h2>
+  <div id="videos"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const ROOM_ID = "group-room";
+    const peers = {};
+    const videosDiv = document.getElementById("videos");
+
+    const localVideo = document.createElement("video");
+    localVideo.muted = true;
+    videosDiv.appendChild(localVideo);
+
+    let localStream;
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+      localStream = stream;
+      localVideo.srcObject = stream;
+      localVideo.play();
+
+      socket.emit("join-room", ROOM_ID);
+    });
+
+    socket.on("user-connected", userId => {
+      const peer = createPeer(userId);
+      peers[userId] = peer;
+
+      localStream.getTracks().forEach(track => {
+        peer.addTrack(track, localStream);
+      });
+
+      peer.createOffer().then(offer => {
+        peer.setLocalDescription(offer);
+        socket.emit("offer", { to: userId, offer });
+      });
+    });
+
+    socket.on("offer", ({ from, offer }) => {
+      const peer = createPeer(from);
+      peers[from] = peer;
+
+      localStream.getTracks().forEach(track => {
+        peer.addTrack(track, localStream);
+      });
+
+      peer.setRemoteDescription(new RTCSessionDescription(offer)).then(() => {
+        return peer.createAnswer();
+      }).then(answer => {
+        peer.setLocalDescription(answer);
+        socket.emit("answer", { to: from, answer });
+      });
+    });
+
+    socket.on("answer", ({ from, answer }) => {
+      peers[from].setRemoteDescription(new RTCSessionDescription(answer));
+    });
+
+    socket.on("ice-candidate", ({ from, candidate }) => {
+      if (peers[from]) {
+        peers[from].addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    });
+
+    socket.on("user-disconnected", userId => {
+      if (peers[userId]) {
+        peers[userId].close();
+        delete peers[userId];
+      }
+
+      const video = document.getElementById(userId);
+      if (video) video.remove();
+    });
+
+    function createPeer(userId) {
+      const peer = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+      });
+
+      peer.onicecandidate = event => {
+        if (event.candidate) {
+          socket.emit("ice-candidate", {
+            to: userId,
+            candidate: event.candidate
+          });
+        }
+      };
+
+      peer.ontrack = event => {
+        let remoteVideo = document.getElementById(userId);
+        if (!remoteVideo) {
+          remoteVideo = document.createElement("video");
+          remoteVideo.id = userId;
+          remoteVideo.autoplay = true;
+          videosDiv.appendChild(remoteVideo);
+        }
+        remoteVideo.srcObject = event.streams[0];
+      };
+
+      return peer;
+    }
+  </script>
+</body>
+</html>
