@@ -5,10 +5,36 @@
   <title>Group Video Chat</title>
   <style>
     video { width: 300px; margin: 5px; border: 1px solid #444; }
+    .screen-share { 
+      width: 400px; 
+      border: 2px solid #43a047; 
+      border-radius: 8px;
+    }
+    #controls { margin: 15px 0; }
+    button {
+      padding: 8px 15px;
+      background: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #3367d6;
+    }
+    button:disabled {
+      background: #888;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
   <h2>Group Video Chat</h2>
+  <div id="controls">
+    <button id="screenShareBtn">Share Screen</button>
+    <button id="stopScreenShareBtn" disabled>Stop Sharing</button>
+  </div>
   <div id="videos"></div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -17,12 +43,17 @@
     const ROOM_ID = "group-room";
     const peers = {};
     const videosDiv = document.getElementById("videos");
+    const screenShareBtn = document.getElementById("screenShareBtn");
+    const stopScreenShareBtn = document.getElementById("stopScreenShareBtn");
 
     const localVideo = document.createElement("video");
     localVideo.muted = true;
     videosDiv.appendChild(localVideo);
 
     let localStream;
+    let screenStream;
+    let screenSharingPeers = {};
+    let screenSharingActive = false;
 
     navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
       localStream = stream;
@@ -44,30 +75,54 @@
         peer.setLocalDescription(offer);
         socket.emit("offer", { to: userId, offer });
       });
+
+      // If we are currently sharing screen, also share with the new user
+      if (screenSharingActive && screenStream) {
+        shareScreenWithUser(userId);
+      }
     });
 
-    socket.on("offer", ({ from, offer }) => {
-      const peer = createPeer(from);
-      peers[from] = peer;
-
-      localStream.getTracks().forEach(track => {
-        peer.addTrack(track, localStream);
-      });
+    socket.on("offer", ({ from, offer, isScreenShare }) => {
+      let peer;
+      
+      if (isScreenShare) {
+        // This is a screen sharing offer
+        peer = createScreenPeer(from);
+        screenSharingPeers[from] = peer;
+      } else {
+        // This is a regular video offer
+        peer = createPeer(from);
+        peers[from] = peer;
+        
+        localStream.getTracks().forEach(track => {
+          peer.addTrack(track, localStream);
+        });
+      }
 
       peer.setRemoteDescription(new RTCSessionDescription(offer)).then(() => {
         return peer.createAnswer();
       }).then(answer => {
         peer.setLocalDescription(answer);
-        socket.emit("answer", { to: from, answer });
+        socket.emit("answer", { 
+          to: from, 
+          answer,
+          isScreenShare 
+        });
       });
     });
 
-    socket.on("answer", ({ from, answer }) => {
-      peers[from].setRemoteDescription(new RTCSessionDescription(answer));
+    socket.on("answer", ({ from, answer, isScreenShare }) => {
+      if (isScreenShare && screenSharingPeers[from]) {
+        screenSharingPeers[from].setRemoteDescription(new RTCSessionDescription(answer));
+      } else if (!isScreenShare && peers[from]) {
+        peers[from].setRemoteDescription(new RTCSessionDescription(answer));
+      }
     });
 
-    socket.on("ice-candidate", ({ from, candidate }) => {
-      if (peers[from]) {
+    socket.on("ice-candidate", ({ from, candidate, isScreenShare }) => {
+      if (isScreenShare && screenSharingPeers[from]) {
+        screenSharingPeers[from].addIceCandidate(new RTCIceCandidate(candidate));
+      } else if (!isScreenShare && peers[from]) {
         peers[from].addIceCandidate(new RTCIceCandidate(candidate));
       }
     });
@@ -77,9 +132,27 @@
         peers[userId].close();
         delete peers[userId];
       }
+      if (screenSharingPeers[userId]) {
+        screenSharingPeers[userId].close();
+        delete screenSharingPeers[userId];
+      }
 
       const video = document.getElementById(userId);
       if (video) video.remove();
+      
+      const screenVideo = document.getElementById(`screen-${userId}`);
+      if (screenVideo) screenVideo.remove();
+    });
+
+    // Add new event handler for when a user stops screen sharing
+    socket.on("user-stopped-screen-sharing", userId => {
+      if (screenSharingPeers[userId]) {
+        screenSharingPeers[userId].close();
+        delete screenSharingPeers[userId];
+      }
+      
+      const screenVideo = document.getElementById(`screen-${userId}`);
+      if (screenVideo) screenVideo.remove();
     });
 
     function createPeer(userId) {
@@ -91,7 +164,8 @@
         if (event.candidate) {
           socket.emit("ice-candidate", {
             to: userId,
-            candidate: event.candidate
+            candidate: event.candidate,
+            isScreenShare: false
           });
         }
       };
@@ -108,6 +182,132 @@
       };
 
       return peer;
+    }
+
+    function createScreenPeer(userId) {
+      const peer = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+      });
+
+      peer.onicecandidate = event => {
+        if (event.candidate) {
+          socket.emit("ice-candidate", {
+            to: userId,
+            candidate: event.candidate,
+            isScreenShare: true
+          });
+        }
+      };
+
+      peer.ontrack = event => {
+        let screenVideo = document.getElementById(`screen-${userId}`);
+        if (!screenVideo) {
+          screenVideo = document.createElement("video");
+          screenVideo.id = `screen-${userId}`;
+          screenVideo.autoplay = true;
+          screenVideo.classList.add("screen-share");
+          videosDiv.appendChild(screenVideo);
+        }
+        screenVideo.srcObject = event.streams[0];
+      };
+
+      return peer;
+    }
+
+    // Screen sharing functionality
+    screenShareBtn.addEventListener("click", () => {
+      if (screenSharingActive) return;
+      
+      navigator.mediaDevices.getDisplayMedia({ video: true })
+        .then(stream => {
+          screenStream = stream;
+          screenSharingActive = true;
+          
+          // Create a local video element for screen preview
+          const screenVideo = document.createElement("video");
+          screenVideo.id = "local-screen";
+          screenVideo.muted = true;
+          screenVideo.srcObject = screenStream;
+          screenVideo.play();
+          screenVideo.classList.add("screen-share");
+          videosDiv.appendChild(screenVideo);
+          
+          // Send screen to all connected peers
+          Object.keys(peers).forEach(userId => {
+            shareScreenWithUser(userId);
+          });
+          
+          // Listen for the screen sharing to end
+          screenStream.getVideoTracks()[0].onended = () => {
+            stopScreenSharing();
+          };
+          
+          screenShareBtn.disabled = true;
+          stopScreenShareBtn.disabled = false;
+        })
+        .catch(error => {
+          console.error("Error sharing screen:", error);
+        });
+    });
+    
+    stopScreenShareBtn.addEventListener("click", stopScreenSharing);
+    
+    function stopScreenSharing() {
+      if (!screenSharingActive) return;
+      
+      // Stop all screen tracks
+      if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+        screenStream = null;
+      }
+      
+      // Close all screen sharing peer connections
+      Object.values(screenSharingPeers).forEach(peer => peer.close());
+      screenSharingPeers = {};
+      
+      // Remove screen preview
+      const localScreen = document.getElementById("local-screen");
+      if (localScreen) localScreen.remove();
+      
+      // Notify others that screen sharing has stopped
+      socket.emit("screen-sharing-stopped", ROOM_ID);
+      
+      screenSharingActive = false;
+      screenShareBtn.disabled = false;
+      stopScreenShareBtn.disabled = true;
+    }
+    
+    function shareScreenWithUser(userId) {
+      const peer = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+      });
+      
+      screenSharingPeers[userId] = peer;
+      
+      peer.onicecandidate = event => {
+        if (event.candidate) {
+          socket.emit("ice-candidate", {
+            to: userId,
+            candidate: event.candidate,
+            isScreenShare: true
+          });
+        }
+      };
+      
+      // Add screen track to peer connection
+      screenStream.getTracks().forEach(track => {
+        peer.addTrack(track, screenStream);
+      });
+      
+      // Create and send offer
+      peer.createOffer().then(offer => {
+        peer.setLocalDescription(offer);
+        socket.emit("offer", { 
+          to: userId, 
+          offer,
+          isScreenShare: true 
+        });
+      });
     }
   </script>
 </body>

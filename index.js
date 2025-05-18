@@ -22,22 +22,29 @@ io.on("connection", socket => {
     socket.on("offer", data => {
       socket.to(data.to).emit("offer", {
         from: socket.id,
-        offer: data.offer
+        offer: data.offer,
+        isScreenShare: data.isScreenShare || false
       });
     });
 
     socket.on("answer", data => {
       socket.to(data.to).emit("answer", {
         from: socket.id,
-        answer: data.answer
+        answer: data.answer,
+        isScreenShare: data.isScreenShare || false
       });
     });
 
     socket.on("ice-candidate", data => {
       socket.to(data.to).emit("ice-candidate", {
         from: socket.id,
-        candidate: data.candidate
+        candidate: data.candidate,
+        isScreenShare: data.isScreenShare || false
       });
+    });
+
+    socket.on("screen-sharing-stopped", roomId => {
+      socket.to(roomId).emit("user-stopped-screen-sharing", socket.id);
     });
   });
 });
