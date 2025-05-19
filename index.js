@@ -6,6 +6,12 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Redirect root to home page - must be defined BEFORE static middleware
+app.get('/', (req, res) => {
+  res.redirect('/home.html');
+});
+
+// Static middleware should come after specific routes
 app.use(express.static("public"));
 
 io.on("connection", socket => {

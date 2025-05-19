@@ -8,7 +8,13 @@ import { addVideoLoadedListener } from './utils.js';
 
 // Global variables
 window.socket = io();
-window.ROOM_ID = "group-room";
+// Get room ID from URL parameters or use default
+function getRoomIdFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomId = urlParams.get('room');
+  return roomId || "group-room"; // Use "group-room" as fallback
+}
+window.ROOM_ID = getRoomIdFromUrl();
 window.peers = {};
 window.videosDiv = document.getElementById("videos");
 window.localStream = null;
@@ -36,6 +42,12 @@ const audioConstraints = {
 
 // Initialize the application
 async function init() {
+  // Display room ID in UI
+  const roomInfoElement = document.createElement('div');
+  roomInfoElement.className = 'room-info';
+  roomInfoElement.innerHTML = `<span>Room: ${window.ROOM_ID}</span>`;
+  document.querySelector('.header').appendChild(roomInfoElement);
+
   // Setup UI elements and listeners
   setupUIElements();
   setupUIEventListeners();

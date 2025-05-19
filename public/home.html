@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Darpan - Video Conferencing</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+  <style>
+    .home-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 0;
+      border-bottom: 1px solid #e0e0e0;
+      margin-bottom: 40px;
+    }
+    
+    .logo {
+      font-size: 28px;
+      font-weight: 600;
+      color: #4285f4;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .nav-links a {
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    
+    .nav-links a:hover {
+      color: #4285f4;
+    }
+    
+    .hero-section {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    
+    .hero-section h1 {
+      font-size: 42px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    
+    .hero-section p {
+      font-size: 18px;
+      color: #666;
+      margin-bottom: 30px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .meeting-options {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 30px;
+      background-color: #f8f9fa;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .option-title {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+    
+    .option-description {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 15px;
+    }
+    
+    .input-group {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    
+    .input-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    
+    .input-group input:focus {
+      border-color: #4285f4;
+      outline: none;
+    }
+    
+    .button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    .button:hover {
+      background-color: #3367d6;
+    }
+    
+    .button.secondary {
+      background-color: #34a853;
+    }
+    
+    .button.secondary:hover {
+      background-color: #2d9146;
+    }
+    
+    .divider {
+      margin: 20px 0;
+      text-align: center;
+      color: #666;
+      position: relative;
+    }
+    
+    .divider::before,
+    .divider::after {
+      content: "";
+      display: block;
+      width: 45%;
+      height: 1px;
+      background-color: #ddd;
+      position: absolute;
+      top: 50%;
+    }
+    
+    .divider::before {
+      left: 0;
+    }
+    
+    .divider::after {
+      right: 0;
+    }
+    
+    @media (max-width: 768px) {
+      .hero-section h1 {
+        font-size: 32px;
+      }
+      
+      .meeting-options {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="home-container">
+    <nav class="navbar">
+      <div class="logo">Darpan</div>
+      <div class="nav-links">
+        <a href="#">Home</a>
+        <a href="#">Features</a>
+        <a href="#">How it works</a>
+        <a href="#">About</a>
+      </div>
+    </nav>
+    
+    <section class="hero-section">
+      <h1>Connect with Anyone, Anywhere</h1>
+      <p>High-quality video meetings for teams and individuals. Easy to use, secure, and free.</p>
+    </section>
+    
+    <section class="meeting-options">
+      <div>
+        <h2 class="option-title">Create a New Meeting</h2>
+        <p class="option-description">Start an instant meeting with a randomly generated room</p>
+        <button id="createMeetingBtn" class="button">Create New Meeting</button>
+      </div>
+      
+      <div class="divider">OR</div>
+      
+      <div>
+        <h2 class="option-title">Join a Meeting</h2>
+        <p class="option-description">Enter the meeting code provided by the organizer</p>
+        <div class="input-group">
+          <input type="text" id="roomIdInput" placeholder="Enter room code" autocomplete="off">
+        </div>
+        <button id="joinMeetingBtn" class="button secondary">Join Meeting</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Create meeting button
+      document.getElementById('createMeetingBtn').addEventListener('click', () => {
+        // Generate a random room ID
+        const roomId = generateRoomId();
+        joinRoom(roomId);
+      });
+      
+      // Join meeting button
+      document.getElementById('joinMeetingBtn').addEventListener('click', () => {
+        const roomId = document.getElementById('roomIdInput').value.trim();
+        if (roomId) {
+          joinRoom(roomId);
+        } else {
+          alert('Please enter a valid room code');
+        }
+      });
+      
+      // Allow joining with Enter key
+      document.getElementById('roomIdInput').addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+          document.getElementById('joinMeetingBtn').click();
+        }
+      });
+      
+      // Generate a random room ID
+      function generateRoomId() {
+        return Math.random().toString(36).substring(2, 12);
+      }
+      
+      // Join the specified room
+      function joinRoom(roomId) {
+        window.location.href = `/index.html?room=${roomId}`;
+      }
+    });
+  </script>
+</body>
+</html> 

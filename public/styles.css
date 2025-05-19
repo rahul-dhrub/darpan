@@ -1451,4 +1451,15 @@ video {
 .avatar-placeholder .material-icons {
   font-size: 50px;
   color: white;
+}
+
+/* Add room info styles where appropriate in the CSS file */
+
+.room-info {
+  font-size: 14px;
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 5px 10px;
+  border-radius: 4px;
+  margin-left: 10px;
 } 
