@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join Meeting - Darpan</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="device-preview.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+  <style>
+    body {
+      min-height: 100vh;
+      overflow-y: auto;
+    }
+    
+    .home-container {
+      min-height: 100vh;
+      padding-bottom: 100px;
+      position: relative;
+    }
+    
+    .device-preview-container {
+      margin-bottom: 40px;
+      overflow-y: auto;
+    }
+    
+    .preview-btn.join {
+      display: inline-block !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      background-color: #1a73e8 !important;
+      color: white !important;
+      padding: 10px 20px !important;
+      border-radius: 4px !important;
+      font-weight: 500 !important;
+      z-index: 9999 !important;
+      position: relative !important;
+    }
+    
+    .preview-buttons {
+      display: flex !important;
+      justify-content: flex-end !important;
+      gap: 16px !important;
+      margin-top: 24px !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    
+    .direct-join-btn {
+      display: inline-block;
+      background-color: #34a853;
+      color: white;
+      text-decoration: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 4px;
+      margin: 20px auto;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .bottom-join-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: white;
+      padding: 15px 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      text-align: center;
+      z-index: 9999;
+    }
+    
+    .main-join-btn {
+      background-color: #34a853;
+      color: white;
+      border: none;
+      padding: 15px 50px;
+      border-radius: 30px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transition: all 0.3s;
+    }
+    
+    .main-join-btn:hover {
+      background-color: #2d9146;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    @media (max-width: 600px) {
+      .bottom-join-container {
+        padding: 10px 0;
+      }
+      
+      .main-join-btn {
+        padding: 12px 30px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="home-container">
+    <nav class="navbar">
+      <div class="logo">Darpan</div>
+      <div class="nav-links">
+        <a href="home.html">Home</a>
+        <a href="#">Features</a>
+        <a href="#">How it works</a>
+        <a href="#">About</a>
+      </div>
+    </nav>
+    
+    <div class="device-preview-container">
+      <div class="preview-header">
+        <div>
+          <h2 class="preview-title">Ready to join?</h2>
+          <p class="preview-subtitle">Check your audio and video before joining</p>
+        </div>
+        <button id="go-back" class="preview-btn back">
+          <span class="material-icons" style="vertical-align: middle; margin-right: 5px;">arrow_back</span>
+          Go Back
+        </button>
+      </div>
+      
+      <div class="preview-video-container">
+        <video id="device-preview-video" autoplay muted playsinline></video>
+        <div id="preview-avatar-placeholder" class="avatar-placeholder">
+          <span class="material-icons">person</span>
+        </div>
+      </div>
+      
+      <div class="preview-controls">
+        <button id="mic-toggle" class="preview-control-btn">
+          <span class="material-icons">mic</span>
+        </button>
+        <button id="camera-toggle" class="preview-control-btn">
+          <span class="material-icons">videocam</span>
+        </button>
+      </div>
+      
+      <div class="device-selection">
+        <h3>Camera</h3>
+        <select id="camera-select" class="device-select"></select>
+        <p id="camera-error" class="device-error-message">No camera detected</p>
+        
+        <h3>Microphone</h3>
+        <select id="microphone-select" class="device-select"></select>
+        <div class="audio-meter-container">
+          <div id="audio-level-meter"></div>
+        </div>
+        <p id="mic-error" class="device-error-message">No microphone detected</p>
+      </div>
+      
+      <div class="preview-buttons" style="display: flex !important; justify-content: flex-end !important; margin-top: 24px !important;">
+        <button id="cancel-join" class="preview-btn cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bottom-join-container">
+    <button id="main-join-button" class="main-join-btn">
+      Join Meeting
+    </button>
+  </div>
+
+  <script>
+    window.roomId = new URLSearchParams(window.location.search).get('room');
+    
+    if (!window.roomId) {
+      window.location.href = '/home.html';
+    }
+  </script>
+
+  <script type="module">
+    import { 
+      getAvailableDevices, 
+      startDevicePreview, 
+      stopDevicePreview, 
+      getSelectedDevices,
+      handleDeviceChange,
+      toggleAudio,
+      toggleVideo
+    } from './js/device-preview.js';
+    
+    function joinMeeting() {
+      const selectedDevices = getSelectedDevices();
+      stopDevicePreview();
+      
+      sessionStorage.setItem('selectedDevices', JSON.stringify(selectedDevices));
+      
+      window.location.href = `/index.html?room=${window.roomId}`;
+    }
+    
+    document.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('camera-select').addEventListener('change', (e) => {
+        handleDeviceChange('video', e.target.value);
+      });
+      
+      document.getElementById('microphone-select').addEventListener('change', (e) => {
+        handleDeviceChange('audio', e.target.value);
+      });
+      
+      document.getElementById('mic-toggle').addEventListener('click', toggleAudio);
+      document.getElementById('camera-toggle').addEventListener('click', toggleVideo);
+      
+      document.getElementById('cancel-join').addEventListener('click', () => {
+        stopDevicePreview();
+        window.location.href = '/home.html';
+      });
+      
+      document.getElementById('go-back').addEventListener('click', () => {
+        stopDevicePreview();
+        window.location.href = '/home.html';
+      });
+      
+      const mainJoinBtn = document.getElementById('main-join-button');
+      mainJoinBtn.addEventListener('click', joinMeeting);
+      
+      try {
+        await getAvailableDevices();
+        startDevicePreview();
+      } catch (error) {
+        console.error("Error initializing device preview:", error);
+      }
+    });
+    
+    window.addEventListener('beforeunload', () => {
+      stopDevicePreview();
+    });
+  </script>
+</body>
+</html> 

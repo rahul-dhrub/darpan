@@ -40,6 +40,19 @@ const audioConstraints = {
   autoGainControl: true
 };
 
+// Get selected devices from session storage if available
+function getSelectedDevicesFromSession() {
+  const savedDevices = sessionStorage.getItem('selectedDevices');
+  if (savedDevices) {
+    try {
+      return JSON.parse(savedDevices);
+    } catch (error) {
+      console.error("Error parsing selected devices from session:", error);
+    }
+  }
+  return null;
+}
+
 // Initialize the application
 async function init() {
   // Display room ID in UI
@@ -66,12 +79,36 @@ async function init() {
   
   // Initialize camera and microphone with better error handling
   try {
+    // Check for previously selected devices from device preview
+    const selectedDevices = getSelectedDevicesFromSession();
+    
     try {
-      // First try with both video and audio
-      window.localStream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: audioConstraints 
-      });
+      if (selectedDevices) {
+        // Use selected devices from preview
+        const constraints = {
+          audio: selectedDevices.audioDeviceId ? 
+            { ...audioConstraints, deviceId: { exact: selectedDevices.audioDeviceId } } : 
+            selectedDevices.audioEnabled ? audioConstraints : false,
+          video: selectedDevices.videoDeviceId ? 
+            { deviceId: { exact: selectedDevices.videoDeviceId } } : 
+            selectedDevices.videoEnabled
+        };
+        
+        window.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        // Set initial audio/video enabled state
+        window.audioEnabled = selectedDevices.audioEnabled;
+        window.videoEnabled = selectedDevices.videoEnabled;
+        
+        // Clear session storage after use
+        sessionStorage.removeItem('selectedDevices');
+      } else {
+        // First try with both video and audio
+        window.localStream = await navigator.mediaDevices.getUserMedia({ 
+          video: true, 
+          audio: audioConstraints 
+        });
+      }
     } catch (initialError) {
       console.error("Initial media access error:", initialError);
       
@@ -127,10 +164,33 @@ async function init() {
     // Initialize meeting UI elements
     initMeetingUI();
     
+    // Update UI to reflect audio/video state from device selection
+    if (!window.audioEnabled) {
+      if (window.muteBtn) {
+        window.muteBtn.innerHTML = '<span class="material-icons control-icon">mic_off</span><span class="control-text">Unmute</span>';
+        window.muteBtn.classList.add('active');
+      }
+    }
+    
+    if (!window.videoEnabled) {
+      if (window.videoBtn) {
+        window.videoBtn.innerHTML = '<span class="material-icons control-icon">videocam_off</span><span class="control-text">Start Video</span>';
+        window.videoBtn.classList.add('active');
+      }
+    }
+    
     // Save the original camera video track for reference
     const videoTracks = window.localStream.getVideoTracks();
     if (videoTracks.length > 0) {
       window.cameraVideoTrack = videoTracks[0];
+      // Ensure video track enabled state matches setting
+      videoTracks[0].enabled = window.videoEnabled;
+    }
+    
+    // Ensure audio track enabled state matches setting
+    const audioTracks = window.localStream.getAudioTracks();
+    if (audioTracks.length > 0) {
+      audioTracks[0].enabled = window.audioEnabled;
     }
     
     // Create local video container

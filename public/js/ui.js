@@ -98,8 +98,8 @@ function setupUIEventListeners() {
       }
       window.socket.disconnect();
       
-      // Redirect to rating page with meeting duration
-      window.location.href = `/rating.html?duration=${meetingDuration}`;
+      // Redirect to rating page with meeting duration and room ID
+      window.location.href = `/rating.html?duration=${meetingDuration}&room=${window.ROOM_ID}`;
     }
   });
 

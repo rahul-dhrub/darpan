@@ -1,0 +1,263 @@
+.device-preview-container {
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+  margin-bottom: 100px; /* Extra space for fixed join button */
+}
+
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.home-container {
+  min-height: 100vh;
+  padding-bottom: 100px;
+  box-sizing: border-box;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.preview-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #202124;
+  margin: 0;
+}
+
+.preview-subtitle {
+  font-size: 14px;
+  color: #5f6368;
+  margin-top: 8px;
+}
+
+.preview-video-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  background-color: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+#device-preview-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background-color: #202124;
+}
+
+.avatar-placeholder .material-icons {
+  font-size: 72px;
+  color: #fff;
+}
+
+.preview-controls {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.preview-control-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: background-color 0.2s;
+}
+
+.preview-control-btn:hover {
+  background-color: #f1f3f4;
+}
+
+.preview-control-btn.active {
+  background-color: #ea4335;
+}
+
+.preview-control-btn.active .material-icons {
+  color: #fff;
+}
+
+.preview-control-btn .material-icons {
+  font-size: 24px;
+  color: #5f6368;
+}
+
+.device-selection {
+  margin-bottom: 24px;
+}
+
+.device-selection h3 {
+  font-size: 16px;
+  font-weight: 500;
+  color: #202124;
+  margin-bottom: 8px;
+}
+
+.device-select {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.audio-meter-container {
+  width: 100%;
+  height: 8px;
+  background-color: #dadce0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+#audio-level-meter {
+  height: 100%;
+  width: 0;
+  background-color: #4285f4;
+  border-radius: 4px;
+  transition: width 0.1s ease-out;
+}
+
+.preview-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.preview-btn {
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-family: 'Poppins', sans-serif;
+  display: inline-block;
+}
+
+.preview-btn.back {
+  background-color: #f8f9fa;
+  border: 1px solid #dadce0;
+  color: #5f6368;
+}
+
+.preview-btn.back:hover {
+  background-color: #f1f3f4;
+}
+
+.preview-btn.cancel {
+  background-color: #fff;
+  border: 1px solid #dadce0;
+  color: #5f6368;
+}
+
+.preview-btn.cancel:hover {
+  background-color: #f1f3f4;
+}
+
+.bottom-join-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: white;
+  padding: 15px 0;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  text-align: center;
+  z-index: 9999;
+}
+
+.main-join-btn {
+  background-color: #34a853;
+  color: white;
+  border: none;
+  padding: 15px 50px;
+  border-radius: 30px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: all 0.3s;
+}
+
+.main-join-btn:hover {
+  background-color: #2d9146;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.device-error-message {
+  color: #ea4335;
+  font-size: 14px;
+  margin-top: 8px;
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .device-preview-container {
+    padding: 16px;
+    border-radius: 8px;
+  }
+  
+  .preview-title {
+    font-size: 20px;
+  }
+  
+  .preview-control-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .preview-control-btn .material-icons {
+    font-size: 20px;
+  }
+  
+  .bottom-join-container {
+    padding: 10px 0;
+  }
+  
+  .main-join-btn {
+    padding: 12px 30px;
+    font-size: 16px;
+  }
+} 

@@ -89,10 +89,44 @@ body {
   margin-top: 20px;
   color: #4285f4;
   text-decoration: none;
+  padding: 12px 20px;
 }
 
 .home-link:hover {
   text-decoration: underline;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.rejoin-btn {
+  background: #34a853;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rejoin-btn .material-icons {
+  font-size: 20px;
+}
+
+.rejoin-btn:hover {
+  background: #2d9146;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .thank-you-message {

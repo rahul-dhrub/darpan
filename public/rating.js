@@ -4,6 +4,7 @@ const ratingLabel = document.getElementById('ratingLabel');
 const submitButton = document.getElementById('submitRating');
 const thankYouMessage = document.getElementById('thankYouMessage');
 const feedbackInput = document.querySelector('.feedback-input');
+const rejoinButton = document.getElementById('rejoinMeeting');
 let currentRating = 0;
 
 // Rating text descriptions
@@ -74,13 +75,43 @@ submitButton.addEventListener('click', () => {
   // For this demo, we're just logging to console
 });
 
+// Get URL parameters
+function getUrlParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return {
+    duration: urlParams.get('duration'),
+    roomId: urlParams.get('room')
+  };
+}
+
+// Handle rejoin meeting button
+if (rejoinButton) {
+  rejoinButton.addEventListener('click', () => {
+    const { roomId } = getUrlParams();
+    if (roomId) {
+      // Go to device preview page with the same room ID
+      window.location.href = `/device-preview.html?room=${roomId}`;
+    } else {
+      // If no room ID is available, go to home page
+      alert("The previous meeting information is not available. Starting a new meeting.");
+      window.location.href = '/home.html';
+    }
+  });
+}
+
 // Get meeting duration from URL if present
 document.addEventListener('DOMContentLoaded', () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const meetingDuration = urlParams.get('duration');
-  if (meetingDuration) {
-    const minutes = Math.floor(meetingDuration / 60);
-    const seconds = meetingDuration % 60;
+  const { duration, roomId } = getUrlParams();
+  
+  // Show meeting duration in thank you message
+  if (duration) {
+    const minutes = Math.floor(duration / 60);
+    const seconds = duration % 60;
     document.querySelector('.thank-you').textContent = `Thank you for your ${minutes}m ${seconds}s meeting!`;
+  }
+  
+  // Hide the rejoin button if there's no room ID
+  if (!roomId && rejoinButton) {
+    rejoinButton.style.display = 'none';
   }
 });
