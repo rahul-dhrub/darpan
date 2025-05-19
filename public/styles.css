@@ -1462,4 +1462,316 @@ video {
   padding: 5px 10px;
   border-radius: 4px;
   margin-left: 10px;
+}
+
+/* Background effects panel */
+.side-panel.background-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 350px;
+  background-color: #1e1e1e;
+  color: white;
+  z-index: 1000;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+}
+
+.side-panel.background-panel.visible {
+  transform: translateX(0);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.panel-close-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panel-close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.panel-content {
+  padding: 16px;
+  overflow-y: auto;
+  max-height: calc(100% - 60px); /* Subtract header height */
+}
+
+/* Background effects styles */
+.background-effects-options {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.background-effect-option {
+  width: 70px;
+  height: 55px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.background-effect-option.active {
+  border-color: #4285f4;
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+}
+
+.background-effect-option img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.background-effect-option .effect-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 2px 0;
+  font-size: 10px;
+  text-align: center;
+}
+
+.background-effect-option.none {
+  background-color: #3c4043;
+}
+
+.background-effect-option.blur {
+  background-color: #3949ab;
+}
+
+.background-effect-option.color {
+  background: linear-gradient(135deg, #34a853, #4285f4);
+}
+
+.background-effect-option .material-icons {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 24px;
+}
+
+.custom-background-controls {
+  display: none;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.custom-background-controls.active {
+  display: block;
+}
+
+.color-picker-container {
+  margin-bottom: 15px;
+}
+
+.color-picker-container label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.image-upload-container label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.bg-btn {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.bg-btn:hover {
+  background-color: #5c9ff5;
+}
+
+.image-preview {
+  width: 100%;
+  height: 100px;
+  background-color: #3c4043;
+  border-radius: 4px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  background-size: cover;
+  background-position: center;
+  display: none;
+}
+
+.image-preview.active {
+  display: block;
+}
+
+.preset-backgrounds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.preset-background {
+  width: 70px;
+  height: 45px;
+  border-radius: 4px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.preset-background:hover {
+  transform: scale(1.05);
+  border-color: #4285f4;
+}
+
+@media (max-width: 768px) {
+  .side-panel.background-panel {
+    width: 100%;
+  }
+}
+
+/* Add the following CSS for the processed video canvas */
+
+.processed-video-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+/* Make sure video and canvas are properly positioned */
+.video-item {
+  position: relative;
+}
+
+.video-item video {
+  z-index: 0;
+}
+
+/* Style for container with active background effects */
+.background-effects-active .processed-video-canvas {
+  display: block !important;
+}
+
+/* Blur slider styles */
+.blur-slider-container {
+  margin: 15px 0;
+}
+
+.blur-slider-container label {
+  display: block;
+  margin-bottom: 5px;
+  color: #f5f5f5;
+  font-size: 14px;
+}
+
+.blur-slider {
+  width: 100%;
+  height: 10px;
+  background: #3c4043;
+  outline: none;
+  border-radius: 5px;
+  -webkit-appearance: none;
+  margin: 10px 0;
+}
+
+.blur-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4285f4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.blur-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4285f4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.blur-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: #5c9ff5;
+}
+
+.blur-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  background: #5c9ff5;
+}
+
+#blur-value, #meeting-blur-value {
+  display: inline-block;
+  width: 30px;
+  text-align: center;
+  background: #3c4043;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-left: 10px;
+  font-size: 14px;
+  color: white;
+}
+
+/* For the device preview page */
+#device-preview-video ~ .background-effects-container .blur-slider-container label {
+  color: #5f6368;
+}
+
+#device-preview-video ~ .background-effects-container .blur-slider {
+  background: #dadce0;
+}
+
+#device-preview-video ~ .background-effects-container #blur-value {
+  background: #f1f3f4;
+  color: #5f6368;
 } 

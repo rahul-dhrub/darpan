@@ -1,4 +1,5 @@
 // Device Preview and Selection Module
+import * as BackgroundEffects from './background-effects.js';
 
 // Audio constraints with noise suppression and echo cancellation
 const audioConstraints = {
@@ -15,6 +16,7 @@ let selectedVideoDeviceId = '';
 let selectedAudioDeviceId = '';
 let audioEnabled = true;
 let videoEnabled = true;
+let backgroundEffectsProcessor = null;
 
 // Function to get available media devices
 async function getAvailableDevices() {
@@ -132,6 +134,13 @@ async function startDevicePreview() {
       setupAudioMeter(previewStream, audioMeter);
     }
     
+    // Initialize background effects if available
+    const processedVideoCanvas = document.getElementById('processed-video-canvas');
+    if (processedVideoCanvas && window.backgroundEffectsInitialized) {
+      // Restart background processing with the new stream
+      startBackgroundEffectsProcessing(previewVideo, processedVideoCanvas);
+    }
+    
     // Update UI to reflect current state
     updateDevicePreviewUI();
     
@@ -146,6 +155,130 @@ async function startDevicePreview() {
     } else {
       alert(`Error accessing media devices: ${error.message}`);
     }
+  }
+}
+
+// Initialize background effects
+async function initBackgroundEffects() {
+  const previewVideo = document.getElementById('device-preview-video');
+  const processedVideoCanvas = document.getElementById('processed-video-canvas');
+  
+  if (!previewVideo || !processedVideoCanvas) {
+    console.error('Video elements not found');
+    return false;
+  }
+  
+  try {
+    // Check if device has enough performance for background effects
+    const performanceCheck = await BackgroundEffects.checkPerformance();
+    
+    if (performanceCheck.capable) {
+      // Initialize background effects
+      const initialized = await BackgroundEffects.initBackgroundEffects(previewVideo, processedVideoCanvas);
+      
+      if (initialized) {
+        // Show the canvas
+        processedVideoCanvas.style.display = 'block';
+        
+        // Start background effects processing
+        startBackgroundEffectsProcessing(previewVideo, processedVideoCanvas);
+        
+        // Add a class to indicate background effects are active
+        const videoContainer = previewVideo.parentElement;
+        if (videoContainer) {
+          videoContainer.classList.add('background-effects-active');
+        }
+        
+        // Save initialization state
+        window.backgroundEffectsInitialized = true;
+        
+        console.log('Background effects initialized successfully');
+        return true;
+      }
+    } else {
+      console.warn('Device may not have adequate performance for background effects', performanceCheck);
+      alert('Your device may not have adequate performance for background effects. Some effects may impact video quality.');
+    }
+  } catch (error) {
+    console.error('Error initializing background effects:', error);
+  }
+  
+  return false;
+}
+
+// Start background effects processing
+function startBackgroundEffectsProcessing(videoElement, canvasElement) {
+  // Stop any existing processor
+  if (backgroundEffectsProcessor) {
+    backgroundEffectsProcessor.stop();
+  }
+  
+  // Start a new processor
+  backgroundEffectsProcessor = BackgroundEffects.startBackgroundEffects(videoElement);
+}
+
+// Set the background effect
+function setBackgroundEffect(effectType) {
+  if (window.backgroundEffectsInitialized) {
+    BackgroundEffects.setBackgroundEffect(effectType);
+    
+    // Show/hide canvas based on effect type
+    const processedVideoCanvas = document.getElementById('processed-video-canvas');
+    const videoContainer = document.querySelector('.preview-video-container');
+    
+    if (processedVideoCanvas && videoContainer) {
+      if (effectType === 'none') {
+        processedVideoCanvas.style.display = 'none';
+        videoContainer.classList.remove('background-effects-active');
+      } else {
+        processedVideoCanvas.style.display = 'block';
+        videoContainer.classList.add('background-effects-active');
+      }
+    }
+    
+    console.log(`Applied background effect: ${effectType}`);
+  }
+}
+
+// Set background color
+function setBackgroundColor(color) {
+  if (window.backgroundEffectsInitialized) {
+    BackgroundEffects.setBackgroundColor(color);
+  }
+}
+
+// Set background image
+function setBackgroundImage(imageUrl) {
+  if (window.backgroundEffectsInitialized) {
+    BackgroundEffects.setBackgroundImage(imageUrl);
+    
+    // If we're setting an image, also set the effect to 'image'
+    BackgroundEffects.setBackgroundEffect('image');
+    
+    // Update UI to reflect this
+    const effectOptions = document.querySelectorAll('.background-effect-option');
+    effectOptions.forEach(option => {
+      option.classList.remove('active');
+      if (option.getAttribute('data-effect') === 'image') {
+        option.classList.add('active');
+      }
+    });
+    
+    // Show image controls
+    document.querySelectorAll('.custom-background-controls').forEach(
+      control => control.classList.remove('active')
+    );
+    const imageControls = document.getElementById('image-bg-controls');
+    if (imageControls) {
+      imageControls.classList.add('active');
+    }
+  }
+}
+
+// Set blur radius
+function setBlurRadius(radius) {
+  if (window.backgroundEffectsInitialized) {
+    BackgroundEffects.setBlurRadius(radius);
   }
 }
 
@@ -243,19 +376,26 @@ function stopDevicePreview() {
     previewStream.getTracks().forEach(track => track.stop());
     previewStream = null;
   }
+  
+  // Stop background effects processor
+  if (backgroundEffectsProcessor) {
+    backgroundEffectsProcessor.stop();
+    backgroundEffectsProcessor = null;
+  }
 }
 
 // Function to get the user's selected devices
 function getSelectedDevices() {
   return {
-    videoDeviceId: selectedVideoDeviceId,
     audioDeviceId: selectedAudioDeviceId,
+    videoDeviceId: selectedVideoDeviceId,
+    audioEnabled: audioEnabled,
     videoEnabled: videoEnabled,
-    audioEnabled: audioEnabled
+    backgroundEffect: window.backgroundEffectsInitialized ? BackgroundEffects.getBackgroundSettings() : null
   };
 }
 
-// Handle device selection changes
+// Function to handle device selection change
 function handleDeviceChange(type, deviceId) {
   if (type === 'video') {
     selectedVideoDeviceId = deviceId;
@@ -263,22 +403,22 @@ function handleDeviceChange(type, deviceId) {
     selectedAudioDeviceId = deviceId;
   }
   
-  // Restart preview with new device
+  // Restart the preview with new device
   startDevicePreview();
 }
 
-// Toggle audio/video state
+// Toggle microphone
 function toggleAudio() {
   audioEnabled = !audioEnabled;
   updateDevicePreviewUI();
 }
 
+// Toggle camera
 function toggleVideo() {
   videoEnabled = !videoEnabled;
   updateDevicePreviewUI();
 }
 
-// Export functions
 export {
   getAvailableDevices,
   startDevicePreview,
@@ -286,5 +426,10 @@ export {
   getSelectedDevices,
   handleDeviceChange,
   toggleAudio,
-  toggleVideo
+  toggleVideo,
+  initBackgroundEffects,
+  setBackgroundEffect,
+  setBackgroundColor,
+  setBackgroundImage,
+  setBlurRadius
 }; 

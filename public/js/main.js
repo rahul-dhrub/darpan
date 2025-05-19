@@ -5,6 +5,7 @@ import { updateGridLayout, updateVideoContainerHeight } from './layout.js';
 import { addPinButton, togglePinVideo } from './video-pin.js';
 import { addStatusIndicators, updatePeerMicStatus, updatePeerVideoStatus } from './status-indicators.js';
 import { addVideoLoadedListener } from './utils.js';
+import * as BackgroundEffects from './background-effects.js';
 
 // Global variables
 window.socket = io();
@@ -32,6 +33,9 @@ window.meetingTimerInterval = null;
 window.totalParticipants = 1; // Start with 1 (local user)
 window.headerCollapsed = false;
 window.controlsCollapsed = false;
+window.backgroundEffectsInitialized = false;
+window.backgroundEffectsProcessor = null;
+window.backgroundPanelVisible = false;
 
 // Advanced audio constraints
 const audioConstraints = {
@@ -64,6 +68,7 @@ async function init() {
   // Setup UI elements and listeners
   setupUIElements();
   setupUIEventListeners();
+  setupBackgroundPanelListeners();
   
   // Add window resize event listener
   window.addEventListener('resize', () => {
@@ -99,6 +104,16 @@ async function init() {
         // Set initial audio/video enabled state
         window.audioEnabled = selectedDevices.audioEnabled;
         window.videoEnabled = selectedDevices.videoEnabled;
+        
+        // Initialize background settings if available
+        if (selectedDevices.backgroundEffect) {
+          try {
+            const bgSettings = selectedDevices.backgroundEffect;
+            console.log("Restoring background effect:", bgSettings);
+          } catch (bgError) {
+            console.error("Error restoring background settings:", bgError);
+          }
+        }
         
         // Clear session storage after use
         sessionStorage.removeItem('selectedDevices');
@@ -287,6 +302,12 @@ function createLocalVideoContainer() {
   localVideo.classList.add("local-video");
   localVideo.id = "local";
   
+  // Create a canvas for processed video with background effects
+  const processedVideoCanvas = document.createElement("canvas");
+  processedVideoCanvas.classList.add("processed-video-canvas");
+  processedVideoCanvas.id = "local-processed-canvas";
+  processedVideoCanvas.style.display = "none"; // Hide initially until background effect is applied
+  
   // Check if video track exists, if not, add a user avatar placeholder
   const hasVideoTrack = window.localStream.getVideoTracks().length > 0;
   
@@ -454,6 +475,7 @@ function createLocalVideoContainer() {
   
   // Append elements
   videoContainer.appendChild(localVideo);
+  videoContainer.appendChild(processedVideoCanvas);
   videoContainer.appendChild(localControls);
   
   // Add "You" label
@@ -471,6 +493,228 @@ function createLocalVideoContainer() {
   updatePeerVideoStatus('local', hasVideoTrack && window.videoEnabled);
   
   window.videosDiv.appendChild(videoContainer);
+  
+  // Initialize background effects if video is enabled
+  if (hasVideoTrack && window.videoEnabled) {
+    initializeBackgroundEffects();
+  }
+}
+
+// Setup background panel event listeners
+function setupBackgroundPanelListeners() {
+  const backgroundBtn = document.getElementById('backgroundBtn');
+  const backgroundPanel = document.getElementById('backgroundPanel');
+  const backgroundPanelClose = document.getElementById('backgroundPanelClose');
+  
+  if (!backgroundBtn || !backgroundPanel || !backgroundPanelClose) return;
+  
+  // Toggle background panel
+  backgroundBtn.addEventListener('click', () => {
+    window.backgroundPanelVisible = !window.backgroundPanelVisible;
+    backgroundPanel.classList.toggle('visible', window.backgroundPanelVisible);
+    backgroundBtn.classList.toggle('active', window.backgroundPanelVisible);
+    
+    // Initialize background effects if not already done
+    if (window.backgroundPanelVisible && !window.backgroundEffectsInitialized) {
+      initializeBackgroundEffects();
+    }
+  });
+  
+  // Close background panel
+  backgroundPanelClose.addEventListener('click', () => {
+    window.backgroundPanelVisible = false;
+    backgroundPanel.classList.remove('visible');
+    backgroundBtn.classList.remove('active');
+  });
+  
+  // Setup background effect selection
+  const effectOptions = document.querySelectorAll('.background-effect-option');
+  effectOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      // Remove active class from all options
+      effectOptions.forEach(opt => opt.classList.remove('active'));
+      
+      // Add active class to selected option
+      option.classList.add('active');
+      
+      // Hide all custom controls
+      document.querySelectorAll('.custom-background-controls').forEach(
+        control => control.classList.remove('active')
+      );
+      
+      // Get the selected effect
+      const effect = option.getAttribute('data-effect');
+      
+      // Show relevant custom controls
+      if (effect === 'color') {
+        document.getElementById('color-bg-controls').classList.add('active');
+      } else if (effect === 'image') {
+        document.getElementById('image-bg-controls').classList.add('active');
+      } else if (effect === 'blur') {
+        document.getElementById('blur-bg-controls').classList.add('active');
+      }
+      
+      // Apply the selected effect
+      if (window.backgroundEffectsInitialized) {
+        BackgroundEffects.setBackgroundEffect(effect);
+        
+        // Show/hide canvas based on effect type
+        const processedVideoCanvas = document.getElementById('local-processed-canvas');
+        const videoContainer = document.getElementById('container-local');
+        
+        if (processedVideoCanvas && videoContainer) {
+          if (effect === 'none') {
+            processedVideoCanvas.style.display = 'none';
+            videoContainer.classList.remove('background-effects-active');
+          } else {
+            processedVideoCanvas.style.display = 'block';
+            videoContainer.classList.add('background-effects-active');
+          }
+        }
+        
+        console.log(`Applied background effect: ${effect}`);
+      }
+    });
+  });
+  
+  // Blur intensity slider
+  const blurSlider = document.getElementById('meeting-blur-intensity');
+  const blurValue = document.getElementById('meeting-blur-value');
+  
+  if (blurSlider && blurValue) {
+    blurSlider.addEventListener('input', (e) => {
+      const value = e.target.value;
+      blurValue.textContent = value;
+      if (window.backgroundEffectsInitialized) {
+        BackgroundEffects.setBlurRadius(Number(value));
+      }
+    });
+  }
+  
+  // Background color picker
+  const colorPicker = document.getElementById('meeting-background-color-picker');
+  if (colorPicker) {
+    colorPicker.addEventListener('input', (e) => {
+      if (window.backgroundEffectsInitialized) {
+        BackgroundEffects.setBackgroundColor(e.target.value);
+      }
+    });
+  }
+  
+  // Background image upload
+  const uploadBtn = document.getElementById('meeting-upload-image-btn');
+  const fileInput = document.getElementById('meeting-background-image-upload');
+  
+  if (uploadBtn && fileInput) {
+    uploadBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        const imageURL = URL.createObjectURL(file);
+        
+        // Show image preview
+        const preview = document.getElementById('meeting-image-preview');
+        if (preview) {
+          preview.style.backgroundImage = `url(${imageURL})`;
+          preview.classList.add('active');
+        }
+        
+        // Set as background
+        if (window.backgroundEffectsInitialized) {
+          BackgroundEffects.setBackgroundImage(imageURL);
+          BackgroundEffects.setBackgroundEffect('image');
+          
+          // Update UI to reflect image selection
+          effectOptions.forEach(opt => opt.classList.remove('active'));
+          const imageOption = document.querySelector('.background-effect-option[data-effect="image"]');
+          if (imageOption) {
+            imageOption.classList.add('active');
+          }
+        }
+      }
+    });
+  }
+  
+  // Preset background images
+  const presetBackgrounds = document.querySelectorAll('.preset-background');
+  presetBackgrounds.forEach(preset => {
+    preset.addEventListener('click', () => {
+      const imageUrl = preset.getAttribute('data-image');
+      
+      // Show image preview
+      const preview = document.getElementById('meeting-image-preview');
+      if (preview) {
+        preview.style.backgroundImage = `url(${imageUrl})`;
+        preview.classList.add('active');
+      }
+      
+      // Set as background
+      if (window.backgroundEffectsInitialized) {
+        BackgroundEffects.setBackgroundImage(imageUrl);
+        BackgroundEffects.setBackgroundEffect('image');
+        
+        // Update UI to reflect image selection
+        effectOptions.forEach(opt => opt.classList.remove('active'));
+        const imageOption = document.querySelector('.background-effect-option[data-effect="image"]');
+        if (imageOption) {
+          imageOption.classList.add('active');
+        }
+      }
+    });
+  });
+}
+
+// Initialize background effects
+async function initializeBackgroundEffects() {
+  const localVideo = document.getElementById('local');
+  const processedCanvas = document.getElementById('local-processed-canvas');
+  
+  if (!localVideo || !processedCanvas) {
+    console.error('Video elements not found for background effects');
+    return false;
+  }
+  
+  try {
+    // Check if device has enough performance for background effects
+    const performanceCheck = await BackgroundEffects.checkPerformance();
+    
+    if (performanceCheck.capable) {
+      // Initialize background effects
+      const initialized = await BackgroundEffects.initBackgroundEffects(localVideo, processedCanvas);
+      
+      if (initialized) {
+        // Show the canvas
+        processedCanvas.style.display = 'block';
+        
+        // Start background effects processing
+        if (window.backgroundEffectsProcessor) {
+          window.backgroundEffectsProcessor.stop();
+        }
+        
+        window.backgroundEffectsProcessor = BackgroundEffects.startBackgroundEffects(localVideo);
+        window.backgroundEffectsInitialized = true;
+        
+        // Add a class to the video container to indicate background effects are active
+        const videoContainer = document.getElementById('container-local');
+        if (videoContainer) {
+          videoContainer.classList.add('background-effects-active');
+        }
+        
+        console.log('Background effects initialized successfully');
+        return true;
+      }
+    } else {
+      console.warn('Device may not have adequate performance for background effects', performanceCheck);
+      alert('Your device may not have adequate performance for background effects. This feature might affect performance.');
+    }
+  } catch (error) {
+    console.error('Error initializing background effects:', error);
+  }
+  
+  return false;
 }
 
 // Initialize the app when the DOM is loaded

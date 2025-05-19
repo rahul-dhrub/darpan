@@ -6,6 +6,10 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <!-- BodyPix for background segmentation -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
 </head>
 <body>
   <div class="container">
@@ -53,6 +57,11 @@
             <span class="control-text">Stop Video</span>
           </button>
           
+          <button id="backgroundBtn" class="control-btn">
+            <span class="material-icons control-icon">wallpaper</span>
+            <span class="control-text">Background</span>
+          </button>
+          
           <button id="screenShareBtn" class="control-btn">
             <span class="material-icons control-icon">screen_share</span>
             <span class="control-text">Share Screen</span>
@@ -90,6 +99,78 @@
           <button id="sendBtn" class="send-btn">
             <span class="material-icons">send</span>
           </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Background effects panel -->
+    <div id="backgroundPanel" class="side-panel background-panel hidden">
+      <div class="panel-header">
+        <h2>Background Effects</h2>
+        <button id="backgroundPanelClose" class="panel-close-btn">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      
+      <div class="panel-content">
+        <div class="background-effects-options">
+          <div class="background-effect-option none active" data-effect="none">
+            <span class="material-icons">highlight_off</span>
+            <div class="effect-label">None</div>
+          </div>
+          
+          <div class="background-effect-option blur" data-effect="blur">
+            <span class="material-icons">blur_on</span>
+            <div class="effect-label">Blur</div>
+          </div>
+          
+          <div class="background-effect-option color" data-effect="color">
+            <span class="material-icons">format_color_fill</span>
+            <div class="effect-label">Color</div>
+          </div>
+          
+          <div class="background-effect-option" data-effect="image">
+            <span class="material-icons">image</span>
+            <div class="effect-label">Image</div>
+          </div>
+        </div>
+        
+        <!-- Blur background controls -->
+        <div id="blur-bg-controls" class="custom-background-controls">
+          <div class="blur-slider-container">
+            <label for="meeting-blur-intensity">Blur Intensity:</label>
+            <input type="range" id="meeting-blur-intensity" min="15" max="40" value="15" class="blur-slider">
+            <span id="meeting-blur-value">15</span>
+          </div>
+        </div>
+        
+        <!-- Custom color background controls -->
+        <div id="color-bg-controls" class="custom-background-controls">
+          <div class="color-picker-container">
+            <label for="meeting-background-color-picker">Select background color:</label>
+            <input type="color" id="meeting-background-color-picker" value="#34a853">
+          </div>
+        </div>
+        
+        <!-- Custom image background controls -->
+        <div id="image-bg-controls" class="custom-background-controls">
+          <div class="image-upload-container">
+            <label>Choose background image:</label>
+            <input type="file" id="meeting-background-image-upload" accept="image/*" style="display: none;">
+            <button id="meeting-upload-image-btn" class="bg-btn">
+              <span class="material-icons" style="vertical-align: middle; margin-right: 5px;">upload</span>
+              Upload Image
+            </button>
+            
+            <div id="meeting-image-preview" class="image-preview"></div>
+            
+            <div class="preset-backgrounds">
+              <div class="preset-background" data-image="images/backgrounds/office.jpg" style="background-image: url('images/backgrounds/office.jpg');"></div>
+              <div class="preset-background" data-image="images/backgrounds/beach.jpg" style="background-image: url('images/backgrounds/beach.jpg');"></div>
+              <div class="preset-background" data-image="images/backgrounds/mountain.jpg" style="background-image: url('images/backgrounds/mountain.jpg');"></div>
+              <div class="preset-background" data-image="images/backgrounds/city.jpeg" style="background-image: url('images/backgrounds/city.jpeg');"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

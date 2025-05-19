@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="device-preview.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <!-- BodyPix for background segmentation -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
   <style>
     body {
       min-height: 100vh;
@@ -92,6 +96,156 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
     
+    /* Background effects styles */
+    .background-effects-container {
+      margin-top: 20px;
+    }
+    
+    .background-effects-title {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 15px;
+      color: #202124;
+      display: flex;
+      align-items: center;
+    }
+    
+    .background-effects-title .material-icons {
+      margin-right: 8px;
+      color: #5f6368;
+    }
+    
+    .background-effects-options {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+    
+    .background-effect-option {
+      width: 80px;
+      height: 60px;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+    
+    .background-effect-option.active {
+      border-color: #1a73e8;
+      box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+    }
+    
+    .background-effect-option img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .background-effect-option .effect-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 2px 0;
+      font-size: 10px;
+      text-align: center;
+    }
+    
+    .background-effect-option.none {
+      background-color: #f1f3f4;
+    }
+    
+    .background-effect-option.blur {
+      background-color: #d2e3fc;
+    }
+    
+    .background-effect-option.color {
+      background: linear-gradient(135deg, #34a853, #4285f4);
+    }
+    
+    .background-effect-option .material-icons {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #5f6368;
+      font-size: 24px;
+    }
+    
+    .custom-background-controls {
+      margin-top: 15px;
+      display: none;
+    }
+    
+    .custom-background-controls.active {
+      display: block;
+    }
+    
+    .color-picker-container {
+      margin-top: 10px;
+    }
+    
+    .color-picker-container label {
+      display: block;
+      margin-bottom: 5px;
+      color: #5f6368;
+      font-size: 14px;
+    }
+    
+    .image-upload-container {
+      margin-top: 10px;
+    }
+    
+    .image-upload-container label {
+      display: block;
+      margin-bottom: 5px;
+      color: #5f6368;
+      font-size: 14px;
+    }
+    
+    .image-preview {
+      width: 100%;
+      height: 100px;
+      background-color: #f1f3f4;
+      border-radius: 4px;
+      background-size: cover;
+      background-position: center;
+      margin-top: 10px;
+      display: none;
+    }
+    
+    .image-preview.active {
+      display: block;
+    }
+    
+    .preset-backgrounds {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .preset-background {
+      width: 60px;
+      height: 40px;
+      border-radius: 4px;
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+      border: 1px solid #dadce0;
+      transition: all 0.2s ease;
+    }
+    
+    .preset-background:hover {
+      transform: scale(1.05);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+    
     @media (max-width: 600px) {
       .bottom-join-container {
         padding: 10px 0;
@@ -101,6 +255,26 @@
         padding: 12px 30px;
         font-size: 16px;
       }
+      
+      .background-effects-options {
+        gap: 10px;
+      }
+      
+      .background-effect-option {
+        width: 70px;
+        height: 55px;
+      }
+    }
+
+    /* Canvas for processed video */
+    #processed-video-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
     }
   </style>
 </head>
@@ -130,6 +304,7 @@
       
       <div class="preview-video-container">
         <video id="device-preview-video" autoplay muted playsinline></video>
+        <canvas id="processed-video-canvas"></canvas>
         <div id="preview-avatar-placeholder" class="avatar-placeholder">
           <span class="material-icons">person</span>
         </div>
@@ -155,6 +330,73 @@
           <div id="audio-level-meter"></div>
         </div>
         <p id="mic-error" class="device-error-message">No microphone detected</p>
+        
+        <div class="background-effects-container">
+          <h3 class="background-effects-title">
+            <span class="material-icons">wallpaper</span>
+            Background Effects
+          </h3>
+          
+          <div class="background-effects-options">
+            <div class="background-effect-option none active" data-effect="none">
+              <span class="material-icons">highlight_off</span>
+              <div class="effect-label">None</div>
+            </div>
+            
+            <div class="background-effect-option blur" data-effect="blur">
+              <span class="material-icons">blur_on</span>
+              <div class="effect-label">Blur</div>
+            </div>
+            
+            <div class="background-effect-option color" data-effect="color">
+              <span class="material-icons">format_color_fill</span>
+              <div class="effect-label">Color</div>
+            </div>
+            
+            <div class="background-effect-option" data-effect="image">
+              <span class="material-icons">image</span>
+              <div class="effect-label">Image</div>
+            </div>
+          </div>
+          
+          <!-- Blur background controls -->
+          <div id="blur-bg-controls" class="custom-background-controls">
+            <div class="blur-slider-container">
+              <label for="blur-intensity">Blur Intensity:</label>
+              <input type="range" id="blur-intensity" min="5" max="40" value="15" class="blur-slider">
+              <span id="blur-value">15</span>
+            </div>
+          </div>
+          
+          <!-- Custom color background controls -->
+          <div id="color-bg-controls" class="custom-background-controls">
+            <div class="color-picker-container">
+              <label for="background-color-picker">Select background color:</label>
+              <input type="color" id="background-color-picker" value="#34a853">
+            </div>
+          </div>
+          
+          <!-- Custom image background controls -->
+          <div id="image-bg-controls" class="custom-background-controls">
+            <div class="image-upload-container">
+              <label>Choose background image:</label>
+              <input type="file" id="background-image-upload" accept="image/*" style="display: none;">
+              <button id="upload-image-btn" class="preview-btn" style="margin-top: 5px;">
+                <span class="material-icons" style="vertical-align: middle; margin-right: 5px;">upload</span>
+                Upload Image
+              </button>
+              
+              <div id="image-preview" class="image-preview"></div>
+              
+              <div class="preset-backgrounds">
+                <div class="preset-background" data-image="images/backgrounds/office.jpg" style="background-image: url('images/backgrounds/office.jpg');"></div>
+                <div class="preset-background" data-image="images/backgrounds/beach.jpg" style="background-image: url('images/backgrounds/beach.jpg');"></div>
+                <div class="preset-background" data-image="images/backgrounds/mountain.jpg" style="background-image: url('images/backgrounds/mountain.jpg');"></div>
+                <div class="preset-background" data-image="images/backgrounds/city.jpeg" style="background-image: url('images/backgrounds/city.jpeg');"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div class="preview-buttons" style="display: flex !important; justify-content: flex-end !important; margin-top: 24px !important;">
@@ -185,7 +427,11 @@
       getSelectedDevices,
       handleDeviceChange,
       toggleAudio,
-      toggleVideo
+      toggleVideo,
+      initBackgroundEffects,
+      setBackgroundEffect,
+      setBackgroundColor,
+      setBackgroundImage
     } from './js/device-preview.js';
     
     function joinMeeting() {
@@ -222,8 +468,96 @@
       const mainJoinBtn = document.getElementById('main-join-button');
       mainJoinBtn.addEventListener('click', joinMeeting);
       
+      // Setup background effects UI interactions
+      const effectOptions = document.querySelectorAll('.background-effect-option');
+      effectOptions.forEach(option => {
+        option.addEventListener('click', () => {
+          // Remove active class from all options
+          effectOptions.forEach(opt => opt.classList.remove('active'));
+          
+          // Add active class to selected option
+          option.classList.add('active');
+          
+          // Hide all custom controls
+          document.querySelectorAll('.custom-background-controls').forEach(
+            control => control.classList.remove('active')
+          );
+          
+          // Get the selected effect
+          const effect = option.getAttribute('data-effect');
+          
+          // Show relevant custom controls
+          if (effect === 'color') {
+            document.getElementById('color-bg-controls').classList.add('active');
+          } else if (effect === 'image') {
+            document.getElementById('image-bg-controls').classList.add('active');
+          }
+          
+          // Apply the selected effect
+          setBackgroundEffect(effect);
+        });
+      });
+      
+      // Background color picker
+      const colorPicker = document.getElementById('background-color-picker');
+      colorPicker.addEventListener('input', (e) => {
+        setBackgroundColor(e.target.value);
+      });
+      
+      // Background image upload
+      const uploadBtn = document.getElementById('upload-image-btn');
+      const fileInput = document.getElementById('background-image-upload');
+      
+      uploadBtn.addEventListener('click', () => {
+        fileInput.click();
+      });
+      
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          const imageURL = URL.createObjectURL(file);
+          
+          // Show image preview
+          const preview = document.getElementById('image-preview');
+          preview.style.backgroundImage = `url(${imageURL})`;
+          preview.classList.add('active');
+          
+          // Set as background
+          setBackgroundImage(imageURL);
+        }
+      });
+      
+      // Preset background images
+      const presetBackgrounds = document.querySelectorAll('.preset-background');
+      presetBackgrounds.forEach(preset => {
+        preset.addEventListener('click', () => {
+          const imageUrl = preset.getAttribute('data-image');
+          
+          // Show image preview
+          const preview = document.getElementById('image-preview');
+          preview.style.backgroundImage = `url(${imageUrl})`;
+          preview.classList.add('active');
+          
+          // Set as background
+          setBackgroundImage(imageUrl);
+        });
+      });
+      
+      // Blur intensity slider
+      const blurSlider = document.getElementById('blur-intensity');
+      const blurValue = document.getElementById('blur-value');
+      
+      if (blurSlider && blurValue) {
+        blurSlider.addEventListener('input', (e) => {
+          const value = e.target.value;
+          blurValue.textContent = value;
+          setBlurRadius(Number(value));
+        });
+      }
+      
       try {
         await getAvailableDevices();
+        await initBackgroundEffects();
         startDevicePreview();
       } catch (error) {
         console.error("Error initializing device preview:", error);
