@@ -117,6 +117,153 @@ function setupUIEventListeners() {
     window.chatToggleBtn.classList.remove('active');
   });
 
+  // Add event listener for mic toggle button
+  window.muteBtn.addEventListener("click", () => {
+    if (window.localStream) {
+      const audioTracks = window.localStream.getAudioTracks();
+      if (audioTracks.length > 0) {
+        window.audioEnabled = !window.audioEnabled;
+        audioTracks[0].enabled = window.audioEnabled;
+        window.muteBtn.innerHTML = window.audioEnabled ? 
+          '<span class="material-icons control-icon">mic</span><span class="control-text">Mute</span>' : 
+          '<span class="material-icons control-icon">mic_off</span><span class="control-text">Unmute</span>';
+        window.muteBtn.classList.toggle('active', !window.audioEnabled);
+        
+        // Also update local video controls if they exist
+        const localMicBtn = document.querySelector('#container-local .local-control-btn:first-child');
+        if (localMicBtn) {
+          localMicBtn.innerHTML = window.audioEnabled ? 
+            '<span class="material-icons">mic</span>' : 
+            '<span class="material-icons">mic_off</span>';
+        }
+        
+        // Update status indicators
+        import('./status-indicators.js').then(module => {
+          module.updatePeerMicStatus('local', window.audioEnabled);
+        });
+        
+        // Emit status change to others
+        window.socket.emit("mic-status-change", {
+          room: window.ROOM_ID,
+          isOn: window.audioEnabled
+        });
+      } else {
+        alert("No microphone detected. Please check your device settings.");
+      }
+    }
+  });
+  
+  // Add event listener for video toggle button
+  window.videoBtn.addEventListener("click", () => {
+    if (window.localStream) {
+      const videoTracks = window.localStream.getVideoTracks();
+      if (videoTracks.length > 0) {
+        window.videoEnabled = !window.videoEnabled;
+        videoTracks[0].enabled = window.videoEnabled;
+        window.videoBtn.innerHTML = window.videoEnabled ? 
+          '<span class="material-icons control-icon">videocam</span><span class="control-text">Stop Video</span>' : 
+          '<span class="material-icons control-icon">videocam_off</span><span class="control-text">Start Video</span>';
+        window.videoBtn.classList.toggle('active', !window.videoEnabled);
+        
+        // Also update local video controls if they exist
+        const localVideoBtn = document.querySelector('#container-local .local-control-btn:nth-child(2)');
+        if (localVideoBtn) {
+          localVideoBtn.innerHTML = window.videoEnabled ? 
+            '<span class="material-icons">videocam</span>' : 
+            '<span class="material-icons">videocam_off</span>';
+        }
+        
+        // Toggle avatar placeholder
+        const videoContainer = document.getElementById('container-local');
+        if (videoContainer) {
+          const avatarPlaceholder = videoContainer.querySelector('.avatar-placeholder');
+          if (window.videoEnabled) {
+            videoContainer.classList.remove('video-off');
+            if (avatarPlaceholder) avatarPlaceholder.style.display = 'none';
+          } else {
+            videoContainer.classList.add('video-off');
+            if (avatarPlaceholder) {
+              avatarPlaceholder.style.display = 'flex';
+            } else {
+              const newAvatar = document.createElement("div");
+              newAvatar.classList.add("avatar-placeholder");
+              newAvatar.innerHTML = '<span class="material-icons">person</span>';
+              videoContainer.appendChild(newAvatar);
+            }
+          }
+        }
+        
+        // Update status indicators
+        import('./status-indicators.js').then(module => {
+          module.updatePeerVideoStatus('local', window.videoEnabled);
+        });
+        
+        // Emit status change to others
+        window.socket.emit("video-status-change", {
+          room: window.ROOM_ID,
+          isOn: window.videoEnabled
+        });
+      } else {
+        // If no video track, try to request one
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(videoStream => {
+            const videoTrack = videoStream.getVideoTracks()[0];
+            
+            // If we already have a stream, add the track to it
+            if (window.localStream) {
+              window.localStream.addTrack(videoTrack);
+              window.cameraVideoTrack = videoTrack;
+              window.videoEnabled = true;
+              
+              // Update UI
+              const videoContainer = document.getElementById('container-local');
+              if (videoContainer) {
+                videoContainer.classList.remove('video-off');
+                const avatarPlaceholder = videoContainer.querySelector('.avatar-placeholder');
+                if (avatarPlaceholder) avatarPlaceholder.style.display = 'none';
+              }
+              
+              // Update buttons
+              window.videoBtn.innerHTML = '<span class="material-icons control-icon">videocam</span><span class="control-text">Stop Video</span>';
+              window.videoBtn.classList.remove('active');
+              
+              // Update local video controls if they exist
+              const localVideoBtn = document.querySelector('#container-local .local-control-btn:nth-child(2)');
+              if (localVideoBtn) {
+                localVideoBtn.innerHTML = '<span class="material-icons">videocam</span>';
+              }
+              
+              // Update local video element
+              const localVideo = document.getElementById('local');
+              if (localVideo) {
+                localVideo.srcObject = window.localStream;
+                localVideo.play().catch(e => console.error("Error playing local video:", e));
+              }
+              
+              // Update status indicators and notify peers
+              import('./status-indicators.js').then(module => {
+                module.updatePeerVideoStatus('local', true);
+              });
+              
+              window.socket.emit("video-status-change", {
+                room: window.ROOM_ID,
+                isOn: true
+              });
+              
+              // Add video track to all peer connections
+              Object.values(window.peers).forEach(peer => {
+                peer.addTrack(videoTrack, window.localStream);
+              });
+            }
+          })
+          .catch(err => {
+            console.error("Failed to get camera access:", err);
+            alert("Could not access camera. Please check your permissions and try again.");
+          });
+      }
+    }
+  });
+
   // Chat functionality
   window.sendBtn.addEventListener("click", sendMessage);
   window.chatInput.addEventListener("keypress", (e) => {
