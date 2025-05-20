@@ -459,10 +459,29 @@ function createLocalVideoContainer() {
           videoContainer.classList.remove('video-off');
           if (avatarPlaceholder) avatarPlaceholder.style.display = 'none';
           
-          // Reapply background effect if needed when video is enabled
-          if (window.backgroundEffectsInitialized && window.savedBackgroundSettings) {
-            // If we have saved background settings and video was just enabled, reapply them
-            applyBackgroundSettings(window.savedBackgroundSettings);
+          // Handle background effects when video is enabled
+          if (window.backgroundEffectsInitialized) {
+            // Get current background settings
+            const currentSettings = BackgroundEffects.getBackgroundSettings();
+            
+            // If background effect is active, show canvas and apply effect
+            if (currentSettings.currentEffect && currentSettings.currentEffect !== 'none') {
+              const processedCanvas = document.getElementById('local-processed-canvas');
+              if (processedCanvas) {
+                processedCanvas.style.display = 'block';
+                videoContainer.classList.add('background-effects-active');
+                
+                // Force a redraw to ensure effect is visible
+                setTimeout(() => {
+                  if (window.backgroundEffectsProcessor) {
+                    const localVideo = document.getElementById('local');
+                    if (localVideo && localVideo.srcObject) {
+                      BackgroundEffects.processFrame(localVideo);
+                    }
+                  }
+                }, 100);
+              }
+            }
           }
         } else {
           videoContainer.classList.add('video-off');
@@ -514,6 +533,19 @@ function createLocalVideoContainer() {
               // Update local video element
               localVideo.srcObject = window.localStream;
               localVideo.play().catch(e => console.error("Error playing local video:", e));
+              
+              // Initialize or re-enable background effects if they were previously set
+              if (window.savedBackgroundSettings) {
+                if (!window.backgroundEffectsInitialized) {
+                  initializeBackgroundEffects().then(initialized => {
+                    if (initialized) {
+                      applyBackgroundSettings(window.savedBackgroundSettings);
+                    }
+                  });
+                } else {
+                  applyBackgroundSettings(window.savedBackgroundSettings);
+                }
+              }
               
               // Update status indicators and notify peers
               updatePeerVideoStatus('local', true);
@@ -638,19 +670,57 @@ function setupBackgroundPanelListeners() {
         
         // Show/hide canvas based on effect type
         const processedVideoCanvas = document.getElementById('local-processed-canvas');
-        const videoContainer = document.getElementById('container-local');
+        const videoContainer = document.getElementById('localVideoContainer');
         
         if (processedVideoCanvas && videoContainer) {
           if (effect === 'none') {
             processedVideoCanvas.style.display = 'none';
             videoContainer.classList.remove('background-effects-active');
-          } else {
+          } else if (window.videoEnabled) {
+            // Only show effects if video is enabled
             processedVideoCanvas.style.display = 'block';
             videoContainer.classList.add('background-effects-active');
+            
+            // Force a frame update to ensure the effect is visible
+            setTimeout(() => {
+              const localVideo = document.getElementById('local');
+              if (localVideo && localVideo.srcObject) {
+                BackgroundEffects.processFrame(localVideo);
+              }
+            }, 100);
           }
         }
         
-        console.log(`Applied background effect: ${effect}`);
+        // Save the settings for reuse
+        window.savedBackgroundSettings = BackgroundEffects.getBackgroundSettings();
+      } else {
+        console.log("Initializing background effects...");
+        initializeBackgroundEffects().then(initialized => {
+          if (initialized) {
+            // Apply effect again after initialization
+            BackgroundEffects.setBackgroundEffect(effect);
+            
+            // Show canvas if not 'none' effect and video is enabled
+            const processedVideoCanvas = document.getElementById('local-processed-canvas');
+            const videoContainer = document.getElementById('localVideoContainer');
+            
+            if (processedVideoCanvas && videoContainer && effect !== 'none' && window.videoEnabled) {
+              processedVideoCanvas.style.display = 'block';
+              videoContainer.classList.add('background-effects-active');
+              
+              // Force a frame update to ensure the effect is visible
+              setTimeout(() => {
+                const localVideo = document.getElementById('local');
+                if (localVideo && localVideo.srcObject) {
+                  BackgroundEffects.processFrame(localVideo);
+                }
+              }, 100);
+            }
+            
+            // Save the settings for reuse
+            window.savedBackgroundSettings = BackgroundEffects.getBackgroundSettings();
+          }
+        });
       }
     });
   });
@@ -791,18 +861,27 @@ async function initializeBackgroundEffects() {
       const initialized = await BackgroundEffects.initBackgroundEffects(localVideo, processedCanvas);
       
       if (initialized) {
-        // Show the canvas (will be shown/hidden based on effect selection later)
-        processedCanvas.style.display = 'none'; // Initially hide until an effect is selected
+        // Initially hide the canvas until an effect is selected
+        processedCanvas.style.display = 'none';
         
-        // Start background effects processing
+        // Stop any existing processor
         if (window.backgroundEffectsProcessor) {
           window.backgroundEffectsProcessor.stop();
         }
         
-        window.backgroundEffectsProcessor = BackgroundEffects.startBackgroundEffects(localVideo);
+        // Start background effects processing with proper fps
+        window.backgroundEffectsProcessor = BackgroundEffects.startBackgroundEffects(localVideo, 1000/20); // 20fps for better performance
         window.backgroundEffectsInitialized = true;
         
         console.log('Background effects initialized successfully');
+        
+        // Force a redraw after initialization
+        setTimeout(() => {
+          if (window.backgroundEffectsProcessor) {
+            BackgroundEffects.processFrame(localVideo);
+          }
+        }, 100);
+        
         return true;
       }
     } else {
@@ -898,16 +977,25 @@ function applyBackgroundSettings(bgSettings) {
         break;
     }
     
-          // Only show the canvas and add the effect class if video is enabled
-    if (window.videoEnabled) {
-      // Show the canvas
-      const processedVideoCanvas = document.getElementById('local-processed-canvas');
-      const videoContainer = document.getElementById('localVideoContainer');
+    // Show the canvas regardless of video state - the video track will control visibility
+    const processedVideoCanvas = document.getElementById('local-processed-canvas');
+    const videoContainer = document.getElementById('localVideoContainer');
+    
+    if (processedVideoCanvas && videoContainer) {
+      processedVideoCanvas.style.display = 'block';
+      videoContainer.classList.add('background-effects-active');
       
-      if (processedVideoCanvas && videoContainer) {
-        processedVideoCanvas.style.display = 'block';
-        videoContainer.classList.add('background-effects-active');
-      }
+      // Force a redraw to ensure the effect is visible
+      setTimeout(() => {
+        // Force processor to draw a new frame with the effect
+        if (window.backgroundEffectsProcessor) {
+          console.log("Triggering background effect redraw");
+          const localVideo = document.getElementById('local');
+          if (localVideo && localVideo.srcObject) {
+            BackgroundEffects.processFrame(localVideo);
+          }
+        }
+      }, 100);
     }
   }
 }
