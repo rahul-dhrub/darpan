@@ -62,6 +62,16 @@
             <span class="control-text">Background</span>
           </button>
           
+          <button id="reactionsBtn" class="control-btn">
+            <span class="material-icons control-icon">emoji_emotions</span>
+            <span class="control-text">Reactions</span>
+          </button>
+          
+          <button id="raiseHandBtn" class="control-btn">
+            <span class="material-icons control-icon">back_hand</span>
+            <span class="control-text">Raise Hand</span>
+          </button>
+          
           <button id="screenShareBtn" class="control-btn">
             <span class="material-icons control-icon">screen_share</span>
             <span class="control-text">Share Screen</span>
@@ -192,6 +202,30 @@
               <div class="preset-background" data-image="images/backgrounds/city.jpeg" style="background-image: url('images/backgrounds/city.jpeg');"></div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Emoji reactions panel -->
+    <div id="reactionsPanel" class="side-panel reactions-panel hidden">
+      <div class="panel-header">
+        <h2>Emoji Reactions</h2>
+        <button id="reactionsPanelClose" class="panel-close-btn">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      
+      <div class="panel-content">
+        <div class="reactions-grid">
+          <button class="reaction-btn" data-emoji="👍">👍</button>
+          <button class="reaction-btn" data-emoji="👏">👏</button>
+          <button class="reaction-btn" data-emoji="❤️">❤️</button>
+          <button class="reaction-btn" data-emoji="😂">😂</button>
+          <button class="reaction-btn" data-emoji="😮">😮</button>
+          <button class="reaction-btn" data-emoji="🎉">🎉</button>
+          <button class="reaction-btn" data-emoji="👋">👋</button>
+          <button class="reaction-btn" data-emoji="🙌">🙌</button>
+          <button class="reaction-btn" data-emoji="🔥">🔥</button>
         </div>
       </div>
     </div>

@@ -146,7 +146,7 @@ function setupUIEventListeners() {
         window.muteBtn.classList.toggle('active', !window.audioEnabled);
         
         // Also update local video controls if they exist
-        const localMicBtn = document.querySelector('#container-local .local-control-btn:first-child');
+        const localMicBtn = document.querySelector('#localVideoContainer .local-control-btn:first-child');
         if (localMicBtn) {
           localMicBtn.innerHTML = window.audioEnabled ? 
             '<span class="material-icons">mic</span>' : 
@@ -182,7 +182,7 @@ function setupUIEventListeners() {
         window.videoBtn.classList.toggle('active', !window.videoEnabled);
         
         // Also update local video controls if they exist
-        const localVideoBtn = document.querySelector('#container-local .local-control-btn:nth-child(2)');
+        const localVideoBtn = document.querySelector('#localVideoContainer .local-control-btn:nth-child(2)');
         if (localVideoBtn) {
           localVideoBtn.innerHTML = window.videoEnabled ? 
             '<span class="material-icons">videocam</span>' : 
@@ -190,7 +190,7 @@ function setupUIEventListeners() {
         }
         
         // Toggle avatar placeholder
-        const videoContainer = document.getElementById('container-local');
+        const videoContainer = document.getElementById('localVideoContainer');
         if (videoContainer) {
           const avatarPlaceholder = videoContainer.querySelector('.avatar-placeholder');
           if (window.videoEnabled) {
@@ -232,7 +232,7 @@ function setupUIEventListeners() {
               window.videoEnabled = true;
               
               // Update UI
-              const videoContainer = document.getElementById('container-local');
+              const videoContainer = document.getElementById('localVideoContainer');
               if (videoContainer) {
                 videoContainer.classList.remove('video-off');
                 const avatarPlaceholder = videoContainer.querySelector('.avatar-placeholder');
@@ -244,7 +244,7 @@ function setupUIEventListeners() {
               window.videoBtn.classList.remove('active');
               
               // Update local video controls if they exist
-              const localVideoBtn = document.querySelector('#container-local .local-control-btn:nth-child(2)');
+              const localVideoBtn = document.querySelector('#localVideoContainer .local-control-btn:nth-child(2)');
               if (localVideoBtn) {
                 localVideoBtn.innerHTML = '<span class="material-icons">videocam</span>';
               }

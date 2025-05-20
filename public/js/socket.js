@@ -23,14 +23,17 @@ function createPeer(userId) {
   };
 
   peer.ontrack = event => {
+    console.log(`Received track from peer ${userId}:`, event.track.kind);
+    
     // Check if video already exists
-    let videoContainer = document.getElementById(`container-${userId}`);
+    let videoContainer = document.getElementById(`video-container-${userId}`);
     let remoteVideo = document.getElementById(userId);
     
     if (!videoContainer) {
+      console.log(`Creating new video container for ${userId}`);
       // Create new container for video
       videoContainer = document.createElement("div");
-      videoContainer.id = `container-${userId}`;
+      videoContainer.id = `video-container-${userId}`;
       videoContainer.classList.add("video-item");
       
       // Create new video element
@@ -238,27 +241,116 @@ function createScreenPeer(userId) {
 
 // Set up all socket event listeners
 function setupSocketListeners() {
+  // When this client connects to the server
+  window.socket.on("connect", () => {
+    console.log("Connected to server with ID:", window.socket.id);
+  });
+
+  // When a new user joins (Note: this event is not being emitted by the server)
+  window.socket.on("user-joined", userId => {
+    console.log("User joined event received for:", userId);
+    // The server is using "user-connected" instead of "user-joined"
+    console.warn("user-joined event was received, but the server should be using user-connected");
+    
+    // For backwards compatibility, we'll still handle this event the same way
+    // Create a peer connection for this user
+    if (!window.peers[userId]) {
+      console.log(`Creating new peer connection for user ${userId} (via user-joined)`);
+      const peer = createPeer(userId);
+      window.peers[userId] = peer;
+      
+      // Add all local tracks to the peer connection
+      if (window.localStream) {
+        window.localStream.getTracks().forEach(track => {
+          peer.addTrack(track, window.localStream);
+        });
+      }
+      
+      // Send an offer to the new user
+      peer.createOffer()
+        .then(offer => peer.setLocalDescription(offer))
+        .then(() => {
+          window.socket.emit("offer", {
+            to: userId,
+            offer: peer.localDescription
+          });
+          console.log(`Offer sent to user ${userId} (via user-joined)`);
+        })
+        .catch(error => {
+          console.error(`Error creating offer for ${userId}:`, error);
+        });
+      
+      // If we have active screen sharing, share it with the new user
+      if (window.screenSharingActive && window.screenStream) {
+        shareScreenWithUser(userId);
+      }
+      
+      // Update participant count
+      window.totalParticipants = Object.keys(window.peers).length + 1; // +1 for local user
+      updateParticipantCount();
+      
+      // Announce for screen readers
+      announceToScreenReaders(`New participant joined. Total participants: ${window.totalParticipants}`);
+    } else {
+      console.log(`Peer connection for ${userId} already exists (via user-joined)`);
+    }
+  });
+  
+  // Handle incoming reaction from other user
+  window.socket.on("reaction", data => {
+    // Import the reactions module dynamically
+    import('./reactions.js').then(module => {
+      if (data && data.emoji) {
+        // Show the emoji
+        module.showFloatingEmoji(data.emoji);
+      }
+    });
+  });
+
   window.socket.on("user-connected", userId => {
-    console.log('User connected: ' + userId);
+    console.log('User connected with ID: ' + userId);
     
     // Update participant count
     window.totalParticipants++;
     updateParticipantCount();
     
+    // Check if peer already exists
+    if (window.peers[userId]) {
+      console.log(`Peer connection for ${userId} already exists, not creating a new one`);
+      return;
+    }
+    
+    console.log(`Creating new peer connection for user ${userId}`);
     const peer = createPeer(userId);
     window.peers[userId] = peer;
-
+    
+    // Make sure we have the local stream before trying to add tracks
+    if (!window.localStream) {
+      console.error("Local stream is not available, cannot add tracks to peer connection");
+      return;
+    }
+    
+    console.log(`Adding ${window.localStream.getTracks().length} local tracks to the peer connection`);
     window.localStream.getTracks().forEach(track => {
       peer.addTrack(track, window.localStream);
     });
 
+    console.log("Creating and sending offer to new user");
     peer.createOffer().then(offer => {
-      peer.setLocalDescription(offer);
-      window.socket.emit("offer", { to: userId, offer });
+      return peer.setLocalDescription(offer);
+    }).then(() => {
+      window.socket.emit("offer", { 
+        to: userId, 
+        offer: peer.localDescription 
+      });
+      console.log(`Offer sent to user ${userId}`);
+    }).catch(error => {
+      console.error(`Error creating or sending offer to ${userId}:`, error);
     });
 
     // If we are currently sharing screen, also share with the new user
     if (window.screenSharingActive && window.screenStream) {
+      console.log(`Sharing active screen with new user ${userId}`);
       shareScreenWithUser(userId);
     }
     
@@ -357,11 +449,14 @@ function setupSocketListeners() {
     }
 
     // Remove video container
-    const videoContainer = document.getElementById(`container-${userId}`);
+    const videoContainer = document.getElementById(`video-container-${userId}`);
     if (videoContainer) {
+      console.log(`Removing video container for disconnected user ${userId}`);
       videoContainer.remove();
       // Update grid layout
       updateGridLayout();
+    } else {
+      console.warn(`Video container for user ${userId} not found when trying to remove it`);
     }
     
     // Remove screen share container

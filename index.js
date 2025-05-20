@@ -19,13 +19,17 @@ io.on("connection", socket => {
 
   socket.on("join-room", roomId => {
     socket.join(roomId);
+    // Broadcast to all other users in the room that a new user has joined
     socket.to(roomId).emit("user-connected", socket.id);
+    console.log(`User ${socket.id} joined room ${roomId}`);
 
     socket.on("disconnect", () => {
       socket.to(roomId).emit("user-disconnected", socket.id);
+      console.log(`User ${socket.id} disconnected from room ${roomId}`);
     });
 
     socket.on("offer", data => {
+      console.log(`Offer received from ${socket.id} to ${data.to}`);
       socket.to(data.to).emit("offer", {
         from: socket.id,
         offer: data.offer,
@@ -34,6 +38,7 @@ io.on("connection", socket => {
     });
 
     socket.on("answer", data => {
+      console.log(`Answer received from ${socket.id} to ${data.to}`);
       socket.to(data.to).emit("answer", {
         from: socket.id,
         answer: data.answer,
@@ -83,6 +88,30 @@ io.on("connection", socket => {
     socket.on("peer-count", data => {
       socket.to(data.to).emit("peer-count", {
         count: data.count
+      });
+    });
+    
+    // Handle emoji reactions
+    socket.on("reaction", data => {
+      console.log(`Reaction from ${socket.id}: ${data.emoji}`);
+      socket.to(data.room).emit("reaction", {
+        userId: socket.id,
+        emoji: data.emoji
+      });
+    });
+    
+    // Handle raise hand events
+    socket.on("raise-hand", () => {
+      console.log(`Hand raised by ${socket.id}`);
+      socket.to(roomId).emit("hand-raised", {
+        peerId: socket.id
+      });
+    });
+    
+    socket.on("lower-hand", () => {
+      console.log(`Hand lowered by ${socket.id}`);
+      socket.to(roomId).emit("hand-lowered", {
+        peerId: socket.id
       });
     });
   });

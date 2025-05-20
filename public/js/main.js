@@ -6,6 +6,8 @@ import { addPinButton, togglePinVideo } from './video-pin.js';
 import { addStatusIndicators, updatePeerMicStatus, updatePeerVideoStatus } from './status-indicators.js';
 import { addVideoLoadedListener } from './utils.js';
 import * as BackgroundEffects from './background-effects.js';
+import { initReactions, setupReactionsListeners } from './reactions.js';
+import { initRaiseHand, setupRaiseHandListeners } from './raise-hand.js';
 
 // Global variables
 window.socket = io();
@@ -70,6 +72,14 @@ async function init() {
   setupUIElements();
   setupUIEventListeners();
   setupBackgroundPanelListeners();
+  
+  // Initialize emoji reactions
+  initReactions();
+  setupReactionsListeners();
+  
+  // Initialize raise hand feature
+  initRaiseHand();
+  setupRaiseHandListeners();
   
   // Add window resize event listener
   window.addEventListener('resize', () => {
@@ -300,7 +310,7 @@ function createLocalVideoContainer() {
   // Create a container for the video
   const videoContainer = document.createElement("div");
   videoContainer.classList.add("video-item");
-  videoContainer.id = "container-local";
+  videoContainer.id = "localVideoContainer"; // Using consistent ID format with raise-hand.js
   
   // Create the video element
   const localVideo = document.createElement("video");
@@ -858,11 +868,11 @@ function applyBackgroundSettings(bgSettings) {
         break;
     }
     
-    // Only show the canvas and add the effect class if video is enabled
+          // Only show the canvas and add the effect class if video is enabled
     if (window.videoEnabled) {
       // Show the canvas
       const processedVideoCanvas = document.getElementById('local-processed-canvas');
-      const videoContainer = document.getElementById('container-local');
+      const videoContainer = document.getElementById('localVideoContainer');
       
       if (processedVideoCanvas && videoContainer) {
         processedVideoCanvas.style.display = 'block';
@@ -874,6 +884,20 @@ function applyBackgroundSettings(bgSettings) {
 
 // Initialize the app when the DOM is loaded
 document.addEventListener('DOMContentLoaded', init);
+
+// Import and use debugging tools
+import * as Debug from './debug.js';
+
+// Start debug monitoring when in development mode
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log("Starting debug monitoring");
+    setTimeout(() => {
+      Debug.monitorPeerConnections();
+      Debug.fixVideoContainerIds();
+    }, 5000); // Start after 5 seconds to let connections initialize
+  });
+}
 
 // Export functions that need to be accessed from other modules
 export {
