@@ -99,7 +99,16 @@ function setupUIEventListeners() {
 
   // Leave meeting
   window.leaveBtn.addEventListener("click", () => {
-    if (confirm("Are you sure you want to leave the meeting?")) {
+    // Show custom confirmation dialog
+    const leaveDialog = document.getElementById("leaveConfirmationDialog");
+    leaveDialog.classList.add("show");
+
+    // Handle dialog actions
+    document.getElementById("cancelLeaveBtn").onclick = () => {
+      leaveDialog.classList.remove("show");
+    };
+
+    document.getElementById("confirmLeaveBtn").onclick = () => {
       // Stop recording if active
       stopRecording();
       
@@ -114,9 +123,28 @@ function setupUIEventListeners() {
       }
       window.socket.disconnect();
       
+      // Hide the dialog
+      leaveDialog.classList.remove("show");
+      
       // Redirect to rating page with meeting duration and room ID
       window.location.href = `/rating.html?duration=${meetingDuration}&room=${window.ROOM_ID}`;
-    }
+    };
+
+    // Allow clicking outside the popup to cancel
+    leaveDialog.addEventListener("click", (e) => {
+      if (e.target === leaveDialog) {
+        leaveDialog.classList.remove("show");
+      }
+    });
+    
+    // Close dialog with Escape key
+    const handleEscKey = (e) => {
+      if (e.key === "Escape") {
+        leaveDialog.classList.remove("show");
+        document.removeEventListener("keydown", handleEscKey);
+      }
+    };
+    document.addEventListener("keydown", handleEscKey);
   });
 
   // Toggle chat sidebar

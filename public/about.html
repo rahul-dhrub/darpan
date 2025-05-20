@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About - Darpan</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+  <style>
+    body {
+      min-height: 100vh;
+      overflow-y: auto;
+      margin: 0;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      overflow-y: visible;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+      min-height: 100%;
+    }
+    
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 0;
+      border-bottom: 1px solid #e0e0e0;
+      margin-bottom: 40px;
+    }
+    
+    .logo {
+      font-size: 28px;
+      font-weight: 600;
+      color: #4285f4;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .nav-links a {
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    
+    .nav-links a:hover {
+      color: #4285f4;
+    }
+    
+    .nav-links a.active {
+      color: #4285f4;
+      font-weight: 600;
+    }
+    
+    .page-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+    
+    .page-header h1 {
+      font-size: 42px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    
+    .page-header p {
+      font-size: 18px;
+      color: #666;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    
+    .about-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      margin-bottom: 80px;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .about-image {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      height: 400px;
+      background-color: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .about-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .about-image .material-icons {
+      font-size: 100px;
+      color: #dadce0;
+    }
+    
+    .about-text h2 {
+      font-size: 32px;
+      margin-bottom: 25px;
+      color: #333;
+    }
+    
+    .about-text p {
+      color: #666;
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+    
+    .mission-vision {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 80px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .mission-card, .vision-card {
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      padding: 40px;
+      transition: transform 0.3s, box-shadow 0.3s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .mission-card:hover, .vision-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .mission-card h3, .vision-card h3 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #333;
+      display: flex;
+      align-items: center;
+    }
+    
+    .mission-card .material-icons, .vision-card .material-icons {
+      margin-right: 10px;
+      color: #4285f4;
+    }
+    
+    .mission-card p, .vision-card p {
+      color: #666;
+      line-height: 1.7;
+    }
+    
+    .team-section {
+      margin-bottom: 80px;
+    }
+    
+    .team-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .team-header h2 {
+      font-size: 32px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    
+    .team-header p {
+      color: #666;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 30px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .team-member {
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      overflow: hidden;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .team-member:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .member-photo {
+      height: 200px;
+      background-color: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .member-photo .material-icons {
+      font-size: 80px;
+      color: #dadce0;
+    }
+    
+    .member-info {
+      padding: 20px;
+    }
+    
+    .member-info h3 {
+      font-size: 18px;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    
+    .member-title {
+      font-size: 14px;
+      color: #4285f4;
+      margin-bottom: 10px;
+    }
+    
+    .member-bio {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+    }
+    
+    .cta-section {
+      text-align: center;
+      margin-top: 40px;
+      padding: 60px 0;
+      background-color: #f8f9fa;
+      border-radius: 12px;
+    }
+    
+    .cta-section h2 {
+      font-size: 32px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    
+    .cta-section p {
+      font-size: 18px;
+      color: #666;
+      max-width: 600px;
+      margin: 0 auto 30px;
+    }
+    
+    .cta-btn {
+      display: inline-block;
+      background-color: #4285f4;
+      color: white;
+      text-decoration: none;
+      padding: 15px 30px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 500;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+    
+    .cta-btn:hover {
+      background-color: #3367d6;
+      transform: translateY(-2px);
+    }
+    
+    @media (max-width: 768px) {
+      .page-header h1 {
+        font-size: 32px;
+      }
+      
+      .about-content {
+        grid-template-columns: 1fr;
+        width: 100%;
+      }
+      
+      .mission-vision {
+        grid-template-columns: 1fr;
+        width: 100%;
+      }
+      
+      .team-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="navbar">
+      <div class="logo">Darpan</div>
+      <div class="nav-links">
+        <a href="home.html">Home</a>
+        <a href="features.html">Features</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="about.html" class="active">About</a>
+      </div>
+    </nav>
+    
+    <header class="page-header">
+      <h1>About Darpan</h1>
+      <p>Learn more about our mission, vision, and the team behind Darpan.</p>
+    </header>
+    
+    <div class="about-content">
+      <div class="about-image">
+        <span class="material-icons">videocam</span>
+      </div>
+      <div class="about-text">
+        <h2>Our Story</h2>
+        <p>
+          Darpan was born from a simple idea: video conferencing should be seamless, accessible, 
+          and free from technical barriers. The Sanskrit word "Darpan" means mirror, reflecting 
+          our commitment to creating clear, lifelike connections between people.
+        </p>
+        <p>
+          Founded in 2023, our team of passionate engineers and designers set out to build a 
+          browser-based video conferencing platform that works effortlessly across devices 
+          without the need for downloads or complicated setup.
+        </p>
+        <p>
+          Today, Darpan is used by thousands of people worldwide for work meetings, 
+          online education, virtual events, and staying connected with loved ones.
+        </p>
+      </div>
+    </div>
+    
+    <div class="mission-vision">
+      <div class="mission-card">
+        <h3><span class="material-icons">rocket_launch</span> Our Mission</h3>
+        <p>
+          To democratize video communication by providing a high-quality, accessible platform 
+          that works instantly for everyone, everywhere, without technical barriers or costs.
+        </p>
+      </div>
+      
+      <div class="vision-card">
+        <h3><span class="material-icons">visibility</span> Our Vision</h3>
+        <p>
+          A world where distance is no longer a barrier to meaningful human connection, 
+          where technology enhances rather than complicates our ability to collaborate and communicate.
+        </p>
+      </div>
+    </div>
+    
+    <div class="team-section">
+      <div class="team-header">
+        <h2>Meet Our Team</h2>
+        <p>The passionate minds behind Darpan who are dedicated to creating the best video conferencing experience.</p>
+      </div>
+      
+      <div class="team-grid">
+        <div class="team-member">
+          <div class="member-photo">
+            <span class="material-icons">person</span>
+          </div>
+          <div class="member-info">
+            <h3>Rahul Dhrub</h3>
+            <div class="member-title">Founder & CEO</div>
+            <p class="member-bio">
+              Passionate about creating technology that brings people together and makes collaboration seamless.
+            </p>
+          </div>
+        </div>
+        
+        <div class="team-member">
+          <div class="member-photo">
+            <span class="material-icons">person</span>
+          </div>
+          <div class="member-info">
+            <h3>Aarav Sharma</h3>
+            <div class="member-title">Lead Engineer</div>
+            <p class="member-bio">
+              WebRTC expert with a background in building scalable real-time communication systems.
+            </p>
+          </div>
+        </div>
+        
+        <div class="team-member">
+          <div class="member-photo">
+            <span class="material-icons">person</span>
+          </div>
+          <div class="member-info">
+            <h3>Priya Patel</h3>
+            <div class="member-title">UX Designer</div>
+            <p class="member-bio">
+              Creates intuitive interfaces with a focus on accessibility and user-centered design.
+            </p>
+          </div>
+        </div>
+        
+        <div class="team-member">
+          <div class="member-photo">
+            <span class="material-icons">person</span>
+          </div>
+          <div class="member-info">
+            <h3>Vikram Singh</h3>
+            <div class="member-title">Full Stack Developer</div>
+            <p class="member-bio">
+              Specializes in creating reliable and performant back-end systems for real-time applications.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="cta-section">
+      <h2>Experience Darpan for yourself</h2>
+      <p>Join or create a meeting in seconds. No downloads, no sign-ups, just seamless video conferencing.</p>
+      <a href="home.html" class="cta-btn">Start a Meeting</a>
+    </div>
+  </div>
+</body>
+</html> 

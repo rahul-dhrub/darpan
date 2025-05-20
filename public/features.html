@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Features - Darpan</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+  <style>
+    body {
+      min-height: 100vh;
+      overflow-y: auto;
+      margin: 0;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      overflow-y: visible;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+      min-height: 100%;
+    }
+    
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 0;
+      border-bottom: 1px solid #e0e0e0;
+      margin-bottom: 40px;
+    }
+    
+    .logo {
+      font-size: 28px;
+      font-weight: 600;
+      color: #4285f4;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .nav-links a {
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    
+    .nav-links a:hover {
+      color: #4285f4;
+    }
+    
+    .nav-links a.active {
+      color: #4285f4;
+      font-weight: 600;
+    }
+    
+    .page-header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    
+    .page-header h1 {
+      font-size: 42px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    
+    .page-header p {
+      font-size: 18px;
+      color: #666;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 60px;
+      width: 100%;
+    }
+    
+    .feature-card {
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      padding: 30px;
+      transition: transform 0.3s, box-shadow 0.3s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .feature-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      background-color: #e8f0fe;
+      border-radius: 50%;
+      margin-bottom: 20px;
+    }
+    
+    .feature-icon .material-icons {
+      font-size: 30px;
+      color: #4285f4;
+    }
+    
+    .feature-card h3 {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    
+    .feature-card p {
+      color: #666;
+      line-height: 1.6;
+    }
+    
+    .cta-section {
+      text-align: center;
+      margin-top: 40px;
+      padding: 60px 0;
+      background-color: #f8f9fa;
+      border-radius: 12px;
+    }
+    
+    .cta-section h2 {
+      font-size: 32px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    
+    .cta-section p {
+      font-size: 18px;
+      color: #666;
+      max-width: 600px;
+      margin: 0 auto 30px;
+    }
+    
+    .cta-btn {
+      display: inline-block;
+      background-color: #4285f4;
+      color: white;
+      text-decoration: none;
+      padding: 15px 30px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 500;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+    
+    .cta-btn:hover {
+      background-color: #3367d6;
+      transform: translateY(-2px);
+    }
+    
+    @media (max-width: 768px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+        width: 100%;
+      }
+      
+      .page-header h1 {
+        font-size: 32px;
+      }
+      
+      .feature-card {
+        padding: 20px;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="navbar">
+      <div class="logo">Darpan</div>
+      <div class="nav-links">
+        <a href="home.html">Home</a>
+        <a href="features.html" class="active">Features</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="about.html">About</a>
+      </div>
+    </nav>
+    
+    <header class="page-header">
+      <h1>Powerful Features</h1>
+      <p>Discover the tools that make Darpan the perfect solution for seamless video conferencing.</p>
+    </header>
+    
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-icons">videocam</span>
+        </div>
+        <h3>HD Video Conferencing</h3>
+        <p>Crystal clear video quality ensures you never miss a facial expression or visual cue during your meetings.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-icons">mic</span>
+        </div>
+        <h3>Crystal Clear Audio</h3>
+        <p>Advanced audio processing with noise suppression and echo cancellation ensures everyone is heard clearly.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-icons">screen_share</span>
+        </div>
+        <h3>Screen Sharing</h3>
+        <p>Share your screen with participants to collaborate on documents, presentations, or demonstrate applications.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-icons">chat</span>
+        </div>
+        <h3>In-Meeting Chat</h3>
+        <p>Send messages to all participants during the meeting without interrupting the speaker.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-icons">back_hand</span>
+        </div>
+        <h3>Hand Raising</h3>
+        <p>Signal to the host and other participants when you have a question or comment with the hand raise feature.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-icons">wallpaper</span>
+        </div>
+        <h3>Background Effects</h3>
+        <p>Choose from blur, solid colors, or custom images to hide your background and maintain privacy.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-icons">record_voice_over</span>
+        </div>
+        <h3>Recording</h3>
+        <p>Record your meetings to revisit important discussions or share with teammates who couldn't attend.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-icons">emoji_emotions</span>
+        </div>
+        <h3>Reactions</h3>
+        <p>Express yourself during meetings without interrupting the speaker using emoji reactions.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-icons">fullscreen</span>
+        </div>
+        <h3>Layout Options</h3>
+        <p>Choose between grid view for seeing everyone or pin important speakers to focus on key participants.</p>
+      </div>
+    </div>
+    
+    <div class="cta-section">
+      <h2>Ready to experience Darpan?</h2>
+      <p>Join a meeting or create your own in seconds. No downloads required.</p>
+      <a href="home.html" class="cta-btn">Start a Meeting</a>
+    </div>
+  </div>
+</body>
+</html> 

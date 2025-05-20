@@ -45,6 +45,11 @@
       color: #4285f4;
     }
     
+    .nav-links a.active {
+      color: #4285f4;
+      font-weight: 600;
+    }
+    
     .hero-section {
       text-align: center;
       margin-bottom: 50px;
@@ -158,6 +163,57 @@
       right: 0;
     }
     
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .meeting-link-container {
+      background-color: #f0f4ff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      border: 1px solid #d0e0ff;
+    }
+    
+    .copy-link-group {
+      display: flex;
+      margin-top: 10px;
+    }
+    
+    .meeting-link-input {
+      flex: 1;
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px 0 0 6px;
+      font-size: 14px;
+      background-color: #fff;
+    }
+    
+    .copy-button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 0 6px 6px 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.3s;
+    }
+    
+    .copy-button:hover {
+      background-color: #3367d6;
+    }
+    
+    .copy-confirmation {
+      color: #4caf50;
+      font-size: 14px;
+      margin-top: 8px;
+      font-weight: 500;
+    }
+    
     @media (max-width: 768px) {
       .hero-section h1 {
         font-size: 32px;
@@ -165,6 +221,16 @@
       
       .meeting-options {
         padding: 20px;
+      }
+      
+      .button-group {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .button-group .button {
+        margin-left: 0 !important;
+        width: 100%;
       }
     }
   </style>
@@ -174,10 +240,10 @@
     <nav class="navbar">
       <div class="logo">Darpan</div>
       <div class="nav-links">
-        <a href="#">Home</a>
-        <a href="#">Features</a>
-        <a href="#">How it works</a>
-        <a href="#">About</a>
+        <a href="home.html" class="active">Home</a>
+        <a href="features.html">Features</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="about.html">About</a>
       </div>
     </nav>
     
@@ -190,7 +256,20 @@
       <div>
         <h2 class="option-title">Create a New Meeting</h2>
         <p class="option-description">Start an instant meeting with a randomly generated room</p>
-        <button id="createMeetingBtn" class="button">Create New Meeting</button>
+        <div class="button-group">
+          <button id="createMeetingBtn" class="button">Create New Meeting</button>
+          <button id="createLinkBtn" class="button" style="margin-left: 10px; background-color: #9c27b0;">Create Meeting Link</button>
+        </div>
+        <div id="meetingLinkContainer" class="meeting-link-container" style="display: none; margin-top: 15px;">
+          <p class="option-description">Share this link with others to join your meeting:</p>
+          <div class="copy-link-group">
+            <input type="text" id="meetingLinkInput" readonly class="meeting-link-input">
+            <button id="copyLinkBtn" class="copy-button">
+              <span class="material-icons">content_copy</span>
+            </button>
+          </div>
+          <p id="copyConfirmation" class="copy-confirmation" style="display: none;">Link copied to clipboard!</p>
+        </div>
       </div>
       
       <div class="divider">OR</div>
@@ -208,11 +287,70 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      const meetingLinkContainer = document.getElementById('meetingLinkContainer');
+      const meetingLinkInput = document.getElementById('meetingLinkInput');
+      const copyLinkBtn = document.getElementById('copyLinkBtn');
+      const copyConfirmation = document.getElementById('copyConfirmation');
+      let generatedRoomId = null;
+      
       // Create meeting button
       document.getElementById('createMeetingBtn').addEventListener('click', () => {
         // Generate a random room ID
-        const roomId = generateRoomId();
-        joinRoom(roomId);
+        generatedRoomId = generateRoomId();
+        joinRoom(generatedRoomId);
+      });
+      
+      // Create meeting link button
+      document.getElementById('createLinkBtn').addEventListener('click', () => {
+        // Generate a random room ID if not already generated
+        generatedRoomId = generateRoomId();
+        
+        // Show meeting link container
+        meetingLinkContainer.style.display = 'block';
+        
+        // Generate the full meeting URL
+        const meetingLink = generateMeetingLink(generatedRoomId);
+        
+        // Set the link in the input field
+        meetingLinkInput.value = meetingLink;
+      });
+      
+      // Copy link button
+      copyLinkBtn.addEventListener('click', () => {
+        // Select the text in the input
+        meetingLinkInput.select();
+        meetingLinkInput.setSelectionRange(0, 99999); // For mobile devices
+        
+        try {
+          // Copy the text to clipboard
+          navigator.clipboard.writeText(meetingLinkInput.value)
+            .then(() => {
+              // Show confirmation
+              copyConfirmation.style.display = 'block';
+              
+              // Hide confirmation after 3 seconds
+              setTimeout(() => {
+                copyConfirmation.style.display = 'none';
+              }, 3000);
+            })
+            .catch(err => {
+              console.error('Could not copy text: ', err);
+              // Fallback if clipboard API fails
+              document.execCommand('copy');
+              copyConfirmation.style.display = 'block';
+              setTimeout(() => {
+                copyConfirmation.style.display = 'none';
+              }, 3000);
+            });
+        } catch (err) {
+          console.error('Clipboard API not available: ', err);
+          // Older browser support
+          document.execCommand('copy');
+          copyConfirmation.style.display = 'block';
+          setTimeout(() => {
+            copyConfirmation.style.display = 'none';
+          }, 3000);
+        }
       });
       
       // Join meeting button
@@ -235,6 +373,12 @@
       // Generate a random room ID
       function generateRoomId() {
         return Math.random().toString(36).substring(2, 12);
+      }
+      
+      // Generate a full meeting link from a room ID
+      function generateMeetingLink(roomId) {
+        const baseUrl = window.location.origin;
+        return `${baseUrl}/device-preview.html?room=${roomId}`;
       }
       
       // Join the specified room

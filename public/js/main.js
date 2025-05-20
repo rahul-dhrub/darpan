@@ -8,6 +8,7 @@ import { addVideoLoadedListener } from './utils.js';
 import * as BackgroundEffects from './background-effects.js';
 import { initReactions, setupReactionsListeners } from './reactions.js';
 import { initRaiseHand, setupRaiseHandListeners } from './raise-hand.js';
+import { initMenu } from './menu.js';
 
 // Global variables
 window.socket = io();
@@ -80,6 +81,9 @@ async function init() {
   // Initialize raise hand feature
   initRaiseHand();
   setupRaiseHandListeners();
+  
+  // Initialize menu feature
+  initMenu();
   
   // Add window resize event listener
   window.addEventListener('resize', () => {

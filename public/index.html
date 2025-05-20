@@ -96,6 +96,29 @@
             <span class="material-icons control-icon">call_end</span>
             <span class="control-text">Leave</span>
           </button>
+          
+          <!-- Menu Button -->
+          <button id="menuBtn" class="control-btn menu-btn">
+            <span class="material-icons control-icon">more_vert</span>
+            <span class="control-text">Menu</span>
+          </button>
+          
+          <!-- Menu Panel -->
+          <div id="menuPanel" class="side-panel menu-panel hidden">
+            <div class="panel-header">
+              <h2>Menu</h2>
+              <button id="menuPanelClose" class="panel-close-btn">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+            
+            <div class="panel-content">
+              <button id="fullscreenBtn" class="menu-option-btn">
+                <span class="material-icons">fullscreen</span>
+                <span>Enter Fullscreen</span>
+              </button>
+            </div>
+          </div>
         </div>
         <button id="controlsToggle" class="controls-toggle" title="Toggle Controls">
           <span class="material-icons">expand_more</span>
@@ -227,6 +250,22 @@
           <button class="reaction-btn" data-emoji="🙌">🙌</button>
           <button class="reaction-btn" data-emoji="🔥">🔥</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Leave Meeting Confirmation Dialog -->
+  <div id="leaveConfirmationDialog" class="custom-popup-overlay">
+    <div class="custom-popup">
+      <div class="popup-header">
+        <h3>Leave Meeting</h3>
+      </div>
+      <div class="popup-body">
+        <p>Are you sure you want to leave the meeting?</p>
+      </div>
+      <div class="popup-footer">
+        <button id="cancelLeaveBtn" class="popup-btn cancel-btn">Cancel</button>
+        <button id="confirmLeaveBtn" class="popup-btn confirm-btn">Leave</button>
       </div>
     </div>
   </div>
