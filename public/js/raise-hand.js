@@ -291,9 +291,26 @@ function handlePeerRaisedHand(data) {
  * @returns {string} A display name for the peer
  */
 function getUserDisplayName(peerId) {
-  // Try to get a formatted display name, or use a shortened ID
-  const shortId = peerId.substring(0, 5);
-  return `User ${shortId}`;
+  // Check if this is the local user
+  if (peerId === window.socket?.id) {
+    return window.userDisplayName || `User ${peerId.substring(0, 5)}`;
+  }
+  
+  // Try to find the name span in the video container
+  const videoContainer = document.getElementById(`video-container-${peerId}`);
+  if (videoContainer) {
+    const label = videoContainer.querySelector('.user-label');
+    if (label) {
+      const nameSpan = label.querySelector('.name-text');
+      if (nameSpan) {
+        return nameSpan.textContent;
+      }
+      return label.textContent;
+    }
+  }
+  
+  // Fall back to a shortened ID if no name is found
+  return `User ${peerId.substring(0, 5)}`;
 }
 
 /**

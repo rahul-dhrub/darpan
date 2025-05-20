@@ -401,10 +401,11 @@ function sendMessage() {
     window.socket.emit("chat-message", {
       room: window.ROOM_ID,
       message,
-      sender: window.socket.id
+      sender: window.socket.id,
+      senderName: window.userDisplayName || `User ${window.socket.id.substring(0, 5)}`
     });
     
-    addMessage(message, "You", true);
+    addMessage(message, window.userDisplayName || "You", true);
     window.chatInput.value = "";
   }
 }

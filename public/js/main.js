@@ -40,6 +40,7 @@ window.backgroundEffectsInitialized = false;
 window.backgroundEffectsProcessor = null;
 window.backgroundPanelVisible = false;
 window.savedBackgroundSettings = null; // Store the saved background settings
+window.userDisplayName = `User ${window.socket.id?.substring(0, 5) || 'Local'}`;
 
 // Advanced audio constraints
 const audioConstraints = {
@@ -63,11 +64,25 @@ function getSelectedDevicesFromSession() {
 
 // Initialize the application
 async function init() {
+  // Load saved display name if available
+  try {
+    const savedName = localStorage.getItem('userDisplayName');
+    if (savedName) {
+      window.userDisplayName = savedName;
+      console.log(`Loaded display name from storage: ${window.userDisplayName}`);
+    }
+  } catch (e) {
+    console.warn('Could not load display name from local storage', e);
+  }
+  
   // Display room ID in UI
   const roomInfoElement = document.createElement('div');
   roomInfoElement.className = 'room-info';
   roomInfoElement.innerHTML = `<span>Room: ${window.ROOM_ID}</span>`;
   document.querySelector('.header').appendChild(roomInfoElement);
+
+  // Create user name display in navbar
+  createNameDisplayInNavbar();
 
   // Setup UI elements and listeners
   setupUIElements();
@@ -351,7 +366,24 @@ function createLocalVideoContainer() {
   // Add aspect ratio listener
   addVideoLoadedListener(localVideo);
   
-  // Create local video controls to replace the "You" label
+  // Create user name label with edit functionality
+  const userLabel = document.createElement("div");
+  userLabel.classList.add("user-label");
+  
+  // Create name span
+  const nameSpan = document.createElement("span");
+  nameSpan.classList.add("name-text");
+  nameSpan.textContent = window.userDisplayName;
+  
+  // Add elements to label
+  userLabel.appendChild(nameSpan);
+  
+  // Add video element and label to container
+  videoContainer.appendChild(localVideo);
+  videoContainer.appendChild(processedVideoCanvas);
+  videoContainer.appendChild(userLabel);
+  
+  // Create local video controls
   const localControls = document.createElement("div");
   localControls.classList.add("local-controls");
   
@@ -512,12 +544,6 @@ function createLocalVideoContainer() {
   videoContainer.appendChild(localVideo);
   videoContainer.appendChild(processedVideoCanvas);
   videoContainer.appendChild(localControls);
-  
-  // Add "You" label
-  const label = document.createElement("div");
-  label.classList.add("user-label");
-  label.textContent = "You";
-  videoContainer.appendChild(label);
   
   // Add pin button with tooltip
   addPinButton(videoContainer, "local");
@@ -883,6 +909,189 @@ function applyBackgroundSettings(bgSettings) {
         videoContainer.classList.add('background-effects-active');
       }
     }
+  }
+}
+
+// Add function to update user display name
+function updateDisplayName(newName) {
+  if (!newName || newName.trim() === '') return;
+  
+  const oldName = window.userDisplayName;
+  window.userDisplayName = newName.trim();
+  
+  // Update local video container label
+  const localContainer = document.getElementById('localVideoContainer');
+  if (localContainer) {
+    const nameSpan = localContainer.querySelector('.user-label .name-text');
+    if (nameSpan) {
+      nameSpan.textContent = window.userDisplayName;
+    }
+  }
+  
+  // Update name in navbar
+  const navbarNameText = document.getElementById('navbarNameText');
+  if (navbarNameText) {
+    navbarNameText.textContent = window.userDisplayName;
+  }
+  
+  // Save to local storage to persist between sessions
+  try {
+    localStorage.setItem('userDisplayName', window.userDisplayName);
+  } catch (e) {
+    console.warn('Could not save display name to local storage', e);
+  }
+  
+  // Broadcast name change to other participants with room ID
+  if (window.socket && window.ROOM_ID) {
+    window.socket.emit("name-update", {
+      room: window.ROOM_ID,
+      name: window.userDisplayName
+    });
+    console.log(`Broadcasting name change to room ${window.ROOM_ID}: ${window.userDisplayName}`);
+  } else {
+    console.warn('Socket or room ID not available, cannot broadcast name change');
+  }
+  
+  // Show confirmation toast
+  showNameUpdateToast(oldName, window.userDisplayName);
+}
+
+// Show a toast notification when name is updated
+function showNameUpdateToast(oldName, newName) {
+  const toast = document.createElement('div');
+  toast.classList.add('toast-notification', 'name-update-toast');
+  toast.textContent = `Name changed from "${oldName}" to "${newName}"`;
+  
+  document.body.appendChild(toast);
+  
+  // Animate in
+  setTimeout(() => {
+    toast.classList.add('visible');
+  }, 10);
+  
+  // Remove after delay
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 3000);
+}
+
+// Create user name display in navbar
+function createNameDisplayInNavbar() {
+  const headerControls = document.querySelector('.header-controls');
+  if (!headerControls) return;
+  
+  // Get the chat toggle button to place our element next to it
+  const chatToggleBtn = document.getElementById('chatToggleBtn');
+  
+  // Create name display container
+  const nameDisplay = document.createElement('div');
+  nameDisplay.className = 'name-display';
+  
+  // Create name text element
+  const nameText = document.createElement('span');
+  nameText.className = 'navbar-name-text';
+  nameText.textContent = window.userDisplayName;
+  nameText.id = 'navbarNameText';
+  
+  // Create edit button
+  const editBtn = document.createElement('button');
+  editBtn.className = 'navbar-edit-btn';
+  editBtn.title = 'Edit your display name';
+  editBtn.innerHTML = '<span class="material-icons">edit</span>';
+  
+  // Add click event for editing name
+  editBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    try {
+      showNameEditPopup();
+    } catch (error) {
+      console.error("Error showing name edit popup:", error);
+      alert("Could not open name editor. Please try again.");
+    }
+  });
+  
+  // Add elements to container
+  nameDisplay.appendChild(nameText);
+  nameDisplay.appendChild(editBtn);
+  
+  // Insert before chat toggle button
+  if (chatToggleBtn) {
+    headerControls.insertBefore(nameDisplay, chatToggleBtn);
+  } else {
+    headerControls.appendChild(nameDisplay);
+  }
+}
+
+// Show the custom name edit popup
+function showNameEditPopup() {
+  const popup = document.getElementById('nameEditPopup');
+  const input = document.getElementById('displayNameInput');
+  const saveBtn = document.getElementById('saveNameEdit');
+  const cancelBtn = document.getElementById('cancelNameEdit');
+  
+  if (!popup || !input || !saveBtn || !cancelBtn) {
+    console.error('Name edit popup elements not found');
+    return;
+  }
+  
+  // Set current name in input
+  input.value = window.userDisplayName || '';
+  
+  // Show popup
+  popup.classList.add('show');
+  
+  // Focus input field
+  setTimeout(() => {
+    input.focus();
+    input.select();
+  }, 100);
+  
+  // Handle save button click
+  const saveHandler = () => {
+    const newName = input.value.trim();
+    if (newName) {
+      updateDisplayName(newName);
+      hideNameEditPopup();
+    } else {
+      // Highlight input if empty
+      input.classList.add('error');
+      setTimeout(() => input.classList.remove('error'), 1000);
+    }
+  };
+  
+  // Handle cancel button click
+  const cancelHandler = () => {
+    hideNameEditPopup();
+  };
+  
+  // Handle enter key press
+  const keyHandler = (e) => {
+    if (e.key === 'Enter') {
+      saveHandler();
+    } else if (e.key === 'Escape') {
+      cancelHandler();
+    }
+  };
+  
+  // Remove any existing event listeners
+  saveBtn.removeEventListener('click', saveHandler);
+  cancelBtn.removeEventListener('click', cancelHandler);
+  input.removeEventListener('keydown', keyHandler);
+  
+  // Add event listeners
+  saveBtn.addEventListener('click', saveHandler);
+  cancelBtn.addEventListener('click', cancelHandler);
+  input.addEventListener('keydown', keyHandler);
+}
+
+// Hide the name edit popup
+function hideNameEditPopup() {
+  const popup = document.getElementById('nameEditPopup');
+  if (popup) {
+    popup.classList.remove('show');
   }
 }
 

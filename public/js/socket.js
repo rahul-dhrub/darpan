@@ -48,6 +48,7 @@ function createPeer(userId) {
       // Create label
       const label = document.createElement("div");
       label.classList.add("user-label");
+      // Use a default name based on user ID
       label.textContent = `User ${userId.substring(0, 5)}`;
       
       // Add to DOM
@@ -359,6 +360,18 @@ function setupSocketListeners() {
       to: userId,
       count: Object.keys(window.peers).length
     });
+    
+    // Send our display name to the new user
+    if (window.userDisplayName) {
+      setTimeout(() => {
+        window.socket.emit("name-update", {
+          room: window.ROOM_ID,
+          name: window.userDisplayName,
+          targetUser: userId
+        });
+        console.log(`Sent our display name "${window.userDisplayName}" to new user ${userId}`);
+      }, 2000); // Slight delay to ensure connection is established
+    }
   });
 
   // Handle receiving peer count from existing users
@@ -500,6 +513,14 @@ function setupSocketListeners() {
   window.socket.on("video-status-change", ({ from, isOn }) => {
     updatePeerVideoStatus(from, isOn);
   });
+
+  // Handle name updates from other users
+  window.socket.on("name-update", data => {
+    console.log(`Name update received for user ${data.userId}: ${data.name}`);
+    
+    // Update the user's name in the UI
+    updatePeerDisplayName(data.userId, data.name);
+  });
 }
 
 // Helper function to add chat messages
@@ -522,9 +543,114 @@ function addMessage(message, sender, isSent) {
   }
 }
 
+// Function to update a peer's display name in the UI
+function updatePeerDisplayName(userId, newName) {
+  console.log(`Updating display name for peer ${userId} to "${newName}"`);
+  
+  // Store in a peer names map for future reference
+  if (!window.peerDisplayNames) {
+    window.peerDisplayNames = new Map();
+  }
+  window.peerDisplayNames.set(userId, newName);
+  
+  // Update in regular video container
+  const videoContainer = document.getElementById(`video-container-${userId}`);
+  if (videoContainer) {
+    const label = videoContainer.querySelector('.user-label');
+    if (label) {
+      // Check if the nameSpan exists already
+      let nameSpan = label.querySelector('.name-text');
+      if (nameSpan) {
+        nameSpan.textContent = newName;
+      } else {
+        // If not, update the entire label
+        label.textContent = newName;
+      }
+    }
+  }
+  
+  // Update in sidebar if in pinned mode
+  const sidebarContainer = document.getElementById(`sidebar-container-${userId}`);
+  if (sidebarContainer) {
+    const sidebarLabel = sidebarContainer.querySelector('.user-label');
+    if (sidebarLabel) {
+      // Check if the nameSpan exists already
+      let nameSpan = sidebarLabel.querySelector('.name-text');
+      if (nameSpan) {
+        nameSpan.textContent = newName;
+      } else {
+        // If not, update the entire label
+        sidebarLabel.textContent = newName;
+      }
+    }
+  }
+  
+  // Update screen share containers if they exist
+  const screenContainer = document.getElementById(`screen-container-${userId}`);
+  if (screenContainer) {
+    const screenLabel = screenContainer.querySelector('.user-label');
+    if (screenLabel) {
+      // Screen share labels don't have the name-text class
+      screenLabel.textContent = `Screen: ${newName}`;
+    }
+  }
+  
+  // Update sidebar screen container if it exists
+  const sidebarScreenContainer = document.getElementById(`sidebar-screen-container-${userId}`);
+  if (sidebarScreenContainer) {
+    const sidebarScreenLabel = sidebarScreenContainer.querySelector('.user-label');
+    if (sidebarScreenLabel) {
+      // Screen share labels don't have the name-text class
+      sidebarScreenLabel.textContent = `Screen: ${newName}`;
+    }
+  }
+  
+  // If this peer has raised hand, update the notification text
+  if (window.participantsWithRaisedHands && window.participantsWithRaisedHands.has(userId)) {
+    updateRaisedHandNotifications(userId, newName);
+  }
+  
+  // Update chat messages if there are any from this user
+  updateChatMessagesWithNewName(userId, newName);
+}
+
+// Function to update raised hand notifications with new name
+function updateRaisedHandNotifications(userId, newName) {
+  // Find any hand raise notifications for this user and update them
+  const handNotifications = document.querySelectorAll('.hand-raise-notification');
+  handNotifications.forEach(notification => {
+    const content = notification.textContent;
+    if (content && content.includes(`User ${userId.substring(0, 5)} raised their hand`)) {
+      notification.textContent = `${newName} raised their hand`;
+    }
+  });
+  
+  // Update tooltip on hand indicators
+  const handIndicator = document.querySelector(`.video-container-${userId} .hand-raised-indicator`);
+  if (handIndicator) {
+    handIndicator.title = `${newName} has raised their hand`;
+  }
+}
+
+// Function to update chat messages with new display name
+function updateChatMessagesWithNewName(userId, newName) {
+  const chatMessages = document.querySelectorAll('.message-received .message-meta');
+  const shortUserId = userId.substring(0, 5);
+  
+  chatMessages.forEach(meta => {
+    // Find messages that contain the user's ID or old generic name
+    if (meta.textContent.includes(`User ${shortUserId}`) || 
+        meta.textContent.startsWith(`User ${shortUserId}`)) {
+      // Replace with new name
+      meta.textContent = meta.textContent.replace(`User ${shortUserId}`, newName);
+    }
+  });
+}
+
 export {
-  setupSocketListeners,
   createPeer,
   createScreenPeer,
-  addMessage
+  addMessage,
+  setupSocketListeners,
+  updatePeerDisplayName
 }; 

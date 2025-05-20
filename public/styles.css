@@ -189,6 +189,11 @@ video {
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 60px;
+  z-index: 10;
 }
 
 /* Grid layouts based on participant count - improved */
@@ -597,6 +602,15 @@ video {
   .control-btn {
     min-width: 60px;
     padding: 6px 8px;
+  }
+  
+  /* Make edit name icon more obvious on mobile */
+  .edit-name-icon {
+    opacity: 1;
+    font-size: 20px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    padding: 3px;
   }
 }
 
@@ -2346,4 +2360,192 @@ video {
     width: 100%;
     padding: 10px;
   }
+}
+
+/* Add styles for name editing */
+.name-text {
+  margin-right: 5px;
+}
+
+.edit-name-icon {
+  font-size: 18px;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  margin-left: 2px;
+}
+
+.user-label:hover .edit-name-icon {
+  opacity: 1;
+}
+
+.edit-name-icon:hover {
+  color: white;
+  transform: scale(1.2);
+}
+
+/* Toast notification for name updates */
+.toast-notification.name-update-toast {
+  background-color: rgba(0, 128, 0, 0.8);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 4px;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  z-index: 2000;
+  transition: transform 0.3s ease;
+  opacity: 0;
+}
+
+.toast-notification.name-update-toast.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* Name display in navbar */
+.name-display {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 6px 12px;
+  margin-right: 10px;
+  color: white;
+}
+
+.navbar-name-text {
+  font-size: 14px;
+  font-weight: 500;
+  margin-right: 8px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navbar-edit-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
+}
+
+.navbar-edit-btn:hover {
+  color: white;
+  transform: scale(1.1);
+}
+
+.navbar-edit-btn .material-icons {
+  font-size: 18px;
+}
+
+/* Mobile adjustments for name display */
+@media (max-width: 768px) {
+  .name-display {
+    padding: 4px 8px;
+    margin-right: 8px;
+  }
+  
+  .navbar-name-text {
+    font-size: 12px;
+    max-width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .name-display {
+    padding: 3px 6px;
+    margin-right: 5px;
+  }
+  
+  .navbar-name-text {
+    max-width: 60px;
+  }
+  
+  .header-controls {
+    justify-content: flex-end;
+  }
+}
+
+/* Custom name edit popup styles */
+.name-edit-popup {
+  max-width: 350px;
+  width: 90%;
+}
+
+.name-input-container {
+  margin: 20px 0 10px 0;
+}
+
+.name-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  color: #333;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.name-input:focus {
+  border-color: #4285f4;
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+}
+
+.name-edit-popup .popup-body {
+  padding: 20px;
+}
+
+.name-edit-popup .popup-body p {
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.name-edit-popup .popup-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 15px 20px;
+  border-top: 1px solid #e0e0e0;
+  gap: 10px;
+}
+
+.name-edit-popup .confirm-btn {
+  background-color: #4285f4;
+  color: white;
+}
+
+.name-edit-popup .confirm-btn:hover {
+  background-color: #3367d6;
+}
+
+.name-input.error {
+  border-color: #e53935;
+  box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.2);
+  animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Override some general popup styles for name edit */
+.name-edit-popup .popup-btn {
+  min-width: 80px;
+  transition: all 0.2s ease;
+}
+
+.name-edit-popup .confirm-btn:active {
+  transform: scale(0.95);
 }

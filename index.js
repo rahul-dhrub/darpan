@@ -62,7 +62,7 @@ io.on("connection", socket => {
       socket.to(data.room).emit("chat-message", {
         message: data.message,
         sender: socket.id,
-        senderName: `User ${socket.id.substring(0, 5)}`
+        senderName: data.senderName || `User ${socket.id.substring(0, 5)}`
       });
     });
     
@@ -113,6 +113,27 @@ io.on("connection", socket => {
       socket.to(roomId).emit("hand-lowered", {
         peerId: socket.id
       });
+    });
+
+    // Handle name updates
+    socket.on("name-update", data => {
+      console.log(`Name update from ${socket.id}: ${data.name}`);
+      
+      // If there's a specific target user, only send to them
+      if (data.targetUser) {
+        socket.to(data.targetUser).emit("name-update", {
+          userId: socket.id,
+          name: data.name
+        });
+        console.log(`Sent targeted name update to ${data.targetUser}`);
+      } else {
+        // Otherwise broadcast to the whole room
+        socket.to(data.room).emit("name-update", {
+          userId: socket.id,
+          name: data.name
+        });
+        console.log(`Broadcast name update to room ${data.room}`);
+      }
     });
   });
 });
