@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Support - Darpan</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+  <style>
+    .contact-support-container {
+      max-width: 500px;
+      margin: 60px auto 40px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.07);
+      padding: 32px 28px;
+    }
+    .contact-support-container h2 {
+      text-align: center;
+      margin-bottom: 24px;
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      color: #444;
+      font-weight: 500;
+    }
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 15px;
+      font-family: inherit;
+      resize: vertical;
+    }
+    .form-group input[type="file"] {
+      margin-top: 6px;
+    }
+    .form-group textarea {
+      min-height: 90px;
+    }
+    .submit-btn {
+      width: 100%;
+      background: #4285f4;
+      color: #fff;
+      border: none;
+      padding: 12px 0;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .submit-btn:hover {
+      background: #3367d6;
+    }
+    .success-message, .error-message {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .success-message { color: #34a853; }
+    .error-message { color: #ea4335; }
+    .file-list {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+    
+    .file-item .file-name {
+      flex: 1;
+      margin-right: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .file-item .remove-file {
+      background: none;
+      border: none;
+      color: #ea4335;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .file-item .remove-file:hover {
+      color: #d33426;
+    }
+  </style>
+</head>
+<body>
+  <div class="home-container">
+    <nav class="navbar">
+      <div class="logo">Darpan</div>
+      <div class="nav-links">
+        <a href="home.html">Home</a>
+        <a href="features.html">Features</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="about.html">About</a>
+        <a href="contact-support.html" class="active">Contact Support</a>
+      </div>
+    </nav>
+    <div class="contact-support-container">
+      <h2>Contact Support</h2>
+      <form id="supportForm" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="email">Your Email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="issue">Issue</label>
+          <input type="text" id="issue" name="issue" required>
+        </div>
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" name="description" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="attachments">Attachments (optional)</label>
+          <input type="file" id="attachments" name="attachments" accept="image/*,application/pdf,.doc,.docx,.txt" multiple>
+          <div id="fileList" class="file-list"></div>
+        </div>
+        <button type="submit" class="submit-btn">Send</button>
+        <div id="formMessage"></div>
+      </form>
+    </div>
+  </div>
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h3>Download Our App</h3>
+        <p>Get the best video conferencing experience on your mobile device.</p>
+        <div class="store-buttons">
+          <a href="#" class="store-button">
+            <span class="material-icons">android</span>
+            Get it on Play Store
+          </a>
+          <a href="#" class="store-button">
+            <span class="material-icons">phone_iphone</span>
+            Download on App Store
+          </a>
+        </div>
+      </div>
+      <div class="footer-section">
+        <h3>Quick Links</h3>
+        <ul class="footer-links">
+          <li><a href="features.html">Features</a></li>
+          <li><a href="how-it-works.html">How it Works</a></li>
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="contact-support.html">Contact Support</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Legal</h3>
+        <ul class="footer-links">
+          <li><a href="terms.html">Terms of Service</a></li>
+          <li><a href="privacy.html">Privacy Policy</a></li>
+          <li><a href="#">Cookie Policy</a></li>
+          <li><a href="#">Security</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 Darpan. All rights reserved.</p>
+    </div>
+  </footer>
+  <script>
+    // Handle file selection and list
+    const attachmentsInput = document.getElementById('attachments');
+    const fileList = document.getElementById('fileList');
+    let selectedFiles = new Set();
+
+    attachmentsInput.addEventListener('change', function(e) {
+      const files = Array.from(e.target.files);
+      files.forEach(file => {
+        if (!selectedFiles.has(file.name)) {
+          selectedFiles.add(file.name);
+          const fileItem = document.createElement('div');
+          fileItem.className = 'file-item';
+          fileItem.innerHTML = `
+            <span class="file-name">${file.name}</span>
+            <button type="button" class="remove-file" data-filename="${file.name}">
+              <span class="material-icons">close</span>
+            </button>
+          `;
+          fileList.appendChild(fileItem);
+        }
+      });
+    });
+
+    // Handle file removal
+    fileList.addEventListener('click', function(e) {
+      if (e.target.closest('.remove-file')) {
+        const button = e.target.closest('.remove-file');
+        const filename = button.dataset.filename;
+        selectedFiles.delete(filename);
+        button.closest('.file-item').remove();
+        
+        // Create a new FileList without the removed file
+        const dt = new DataTransfer();
+        Array.from(attachmentsInput.files)
+          .filter(file => file.name !== filename)
+          .forEach(file => dt.items.add(file));
+        attachmentsInput.files = dt.files;
+      }
+    });
+
+    document.getElementById('supportForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+      const messageDiv = document.getElementById('formMessage');
+      messageDiv.textContent = '';
+      try {
+        const response = await fetch('/api/support', {
+          method: 'POST',
+          body: formData
+        });
+        const result = await response.json();
+        if (result.success) {
+          messageDiv.textContent = 'Your message has been sent!';
+          messageDiv.className = 'success-message';
+          form.reset();
+        } else {
+          messageDiv.textContent = result.error || 'Failed to send message.';
+          messageDiv.className = 'error-message';
+        }
+      } catch (err) {
+        messageDiv.textContent = 'An error occurred. Please try again later.';
+        messageDiv.className = 'error-message';
+      }
+    });
+  </script>
+</body>
+</html>
