@@ -259,6 +259,17 @@ async function init() {
     // Join the room
     window.socket.emit("join-room", ROOM_ID);
     
+    // Broadcast display name to all users in the room
+    if (window.userDisplayName) {
+      setTimeout(() => {
+        window.socket.emit("name-update", {
+          room: ROOM_ID,
+          name: window.userDisplayName
+        });
+        console.log(`Broadcasting initial display name "${window.userDisplayName}" to room ${ROOM_ID}`);
+      }, 1000); // Small delay to ensure room join is processed first
+    }
+    
     // Setup socket event listeners
     setupSocketListeners();
     

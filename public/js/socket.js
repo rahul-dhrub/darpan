@@ -48,8 +48,13 @@ function createPeer(userId) {
       // Create label
       const label = document.createElement("div");
       label.classList.add("user-label");
-      // Use a default name based on user ID
-      label.textContent = `User ${userId.substring(0, 5)}`;
+      
+      // Use display name if available, otherwise use a default name based on user ID
+      if (window.peerDisplayNames && window.peerDisplayNames.has(userId)) {
+        label.textContent = window.peerDisplayNames.get(userId);
+      } else {
+        label.textContent = `User ${userId.substring(0, 5)}`;
+      }
       
       // Add to DOM
       videoContainer.appendChild(remoteVideo);
@@ -148,8 +153,13 @@ function createScreenPeer(userId) {
       const label = document.createElement("div");
       label.classList.add("user-label");
       
-      // Use display name if available, otherwise fall back to ID
-      const displayName = window.peerDisplayNames?.get(userId) || window.userDisplayName || `User ${userId.substring(0, 5)}`;
+      // Use display name if available, otherwise use a default name based on user ID
+      let displayName = "User";
+      if (window.peerDisplayNames && window.peerDisplayNames.has(userId)) {
+        displayName = window.peerDisplayNames.get(userId);
+      } else {
+        displayName = `User ${userId.substring(0, 5)}`;
+      }
       label.textContent = `Screen: ${displayName}`;
       
       // Add to DOM
@@ -245,6 +255,11 @@ function createScreenPeer(userId) {
 
 // Set up all socket event listeners
 function setupSocketListeners() {
+  // Initialize peer display names map if not already done
+  if (!window.peerDisplayNames) {
+    window.peerDisplayNames = new Map();
+  }
+  
   // When this client connects to the server
   window.socket.on("connect", () => {
     console.log("Connected to server with ID:", window.socket.id);
@@ -364,16 +379,14 @@ function setupSocketListeners() {
       count: Object.keys(window.peers).length
     });
     
-    // Send our display name to the new user
+    // Immediately send our display name to the new user
     if (window.userDisplayName) {
-      setTimeout(() => {
-        window.socket.emit("name-update", {
-          room: window.ROOM_ID,
-          name: window.userDisplayName,
-          targetUser: userId
-        });
-        console.log(`Sent our display name "${window.userDisplayName}" to new user ${userId}`);
-      }, 2000); // Slight delay to ensure connection is established
+      window.socket.emit("name-update", {
+        room: window.ROOM_ID,
+        name: window.userDisplayName,
+        targetUser: userId
+      });
+      console.log(`Sent our display name "${window.userDisplayName}" to new user ${userId}`);
     }
   });
 

@@ -6,6 +6,9 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Map to store user display names by room
+const userDisplayNames = new Map(); // roomId -> Map<userId, displayName>
+
 // Redirect root to home page - must be defined BEFORE static middleware
 app.get('/', (req, res) => {
   res.redirect('/home.html');
@@ -19,11 +22,39 @@ io.on("connection", socket => {
 
   socket.on("join-room", roomId => {
     socket.join(roomId);
+    
+    // Initialize room in userDisplayNames map if it doesn't exist
+    if (!userDisplayNames.has(roomId)) {
+      userDisplayNames.set(roomId, new Map());
+    }
+    
+    // Send all existing user display names to the new user
+    const roomUsers = userDisplayNames.get(roomId);
+    if (roomUsers && roomUsers.size > 0) {
+      console.log(`Sending ${roomUsers.size} existing display names to new user ${socket.id}`);
+      roomUsers.forEach((name, userId) => {
+        socket.emit("name-update", {
+          userId: userId,
+          name: name
+        });
+      });
+    }
+    
     // Broadcast to all other users in the room that a new user has joined
     socket.to(roomId).emit("user-connected", socket.id);
     console.log(`User ${socket.id} joined room ${roomId}`);
 
     socket.on("disconnect", () => {
+      // Remove user from display names map
+      const roomUsers = userDisplayNames.get(roomId);
+      if (roomUsers) {
+        roomUsers.delete(socket.id);
+        // Clean up empty rooms
+        if (roomUsers.size === 0) {
+          userDisplayNames.delete(roomId);
+        }
+      }
+      
       socket.to(roomId).emit("user-disconnected", socket.id);
       console.log(`User ${socket.id} disconnected from room ${roomId}`);
     });
@@ -70,7 +101,7 @@ io.on("connection", socket => {
     socket.on("mic-status-change", data => {
       console.log(`Mic status change from ${socket.id}: ${data.isOn ? 'on' : 'off'}`);
       socket.to(data.room).emit("mic-status-change", {
-        userId: socket.id, // Use the actual socket.id
+        from: socket.id,
         isOn: data.isOn
       });
     });
@@ -79,7 +110,7 @@ io.on("connection", socket => {
     socket.on("video-status-change", data => {
       console.log(`Video status change from ${socket.id}: ${data.isOn ? 'on' : 'off'}`);
       socket.to(data.room).emit("video-status-change", {
-        userId: socket.id, // Use the actual socket.id
+        from: socket.id,
         isOn: data.isOn
       });
     });
@@ -118,6 +149,12 @@ io.on("connection", socket => {
     // Handle name updates
     socket.on("name-update", data => {
       console.log(`Name update from ${socket.id}: ${data.name}`);
+      
+      // Store the display name in the map
+      const roomUsers = userDisplayNames.get(data.room);
+      if (roomUsers) {
+        roomUsers.set(socket.id, data.name);
+      }
       
       // If there's a specific target user, only send to them
       if (data.targetUser) {
