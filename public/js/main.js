@@ -934,6 +934,9 @@ function updateDisplayName(newName) {
     navbarNameText.textContent = window.userDisplayName;
   }
   
+  // Also update local screen share container if it exists
+  updateLocalScreenShareName(window.userDisplayName);
+  
   // Save to local storage to persist between sessions
   try {
     localStorage.setItem('userDisplayName', window.userDisplayName);
@@ -954,6 +957,27 @@ function updateDisplayName(newName) {
   
   // Show confirmation toast
   showNameUpdateToast(oldName, window.userDisplayName);
+}
+
+// Helper function to update the name in local screen shares
+function updateLocalScreenShareName(displayName) {
+  // Check for main screen share container
+  const localScreenContainer = document.getElementById('local-screen-container');
+  if (localScreenContainer) {
+    const label = localScreenContainer.querySelector('.user-label');
+    if (label) {
+      label.textContent = `Screen: ${displayName}`;
+    }
+  }
+  
+  // Check for sidebar screen share container
+  const sidebarScreenContainer = document.getElementById('sidebar-local-screen-container');
+  if (sidebarScreenContainer) {
+    const label = sidebarScreenContainer.querySelector('.user-label');
+    if (label) {
+      label.textContent = `Screen: ${displayName}`;
+    }
+  }
 }
 
 // Show a toast notification when name is updated

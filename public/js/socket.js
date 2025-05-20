@@ -147,7 +147,10 @@ function createScreenPeer(userId) {
       // Create label
       const label = document.createElement("div");
       label.classList.add("user-label");
-      label.textContent = `Screen: User ${userId.substring(0, 5)}`;
+      
+      // Use display name if available, otherwise fall back to ID
+      const displayName = window.peerDisplayNames?.get(userId) || window.userDisplayName || `User ${userId.substring(0, 5)}`;
+      label.textContent = `Screen: ${displayName}`;
       
       // Add to DOM
       videoContainer.appendChild(screenVideo);
@@ -170,7 +173,7 @@ function createScreenPeer(userId) {
         // Create sidebar label
         const sidebarLabel = document.createElement("div");
         sidebarLabel.classList.add("user-label");
-        sidebarLabel.textContent = `Screen: User ${userId.substring(0, 5)}`;
+        sidebarLabel.textContent = `Screen: ${displayName}`;
         
         // Clone the screen icon for sidebar
         const sidebarIcon = screenIcon.cloneNode(true);

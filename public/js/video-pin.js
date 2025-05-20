@@ -39,22 +39,6 @@ function addPinButton(container, videoId, isPinned = false) {
   
   // Add tooltip for more information
   const isScreenShare = actualVideoId === 'local-screen' || actualVideoId.startsWith('screen-');
-  const tooltipText = isScreenShare ? 
-    (actualVideoId === 'local-screen' ? 'Your screen share' : 'Remote screen share') : 
-    (actualVideoId === 'local' ? 'Your video' : 'Remote participant');
-  
-  const tooltip = document.createElement('div');
-  tooltip.classList.add('video-tooltip');
-  tooltip.textContent = tooltipText;
-  container.appendChild(tooltip);
-  
-  // Add pin instruction tooltip
-  if (!isPinned) {
-    const pinTooltip = document.createElement('div');
-    pinTooltip.classList.add('pin-tooltip');
-    pinTooltip.textContent = isScreenShare ? 'Click pin to enlarge screen' : 'Click pin to enlarge video';
-    container.appendChild(pinTooltip);
-  }
   
   container.appendChild(pinButton);
 }
@@ -136,6 +120,8 @@ function togglePinVideo(videoId) {
 
 // Pin a specific video
 function pinVideo(videoId) {
+  console.log(`Pinning video: ${videoId}`);
+  
   // Handle the previously pinned video first if there is one
   const previouslyPinnedId = window.pinnedVideoId;
   
@@ -177,25 +163,33 @@ function pinVideo(videoId) {
   const isScreenShare = videoId === 'local-screen' || videoId.startsWith('screen-');
   const isLocalScreenShare = videoId === 'local-screen';
   
-  // Get the original video element to access its stream
-  const originalVideoId = videoId.startsWith('screen-') ? videoId : videoId;
-  const originalVideo = document.getElementById(originalVideoId);
+  // Get the correct container ID based on video type
+  let containerIdToFind = videoId === 'local-screen' 
+    ? 'local-screen-container' 
+    : (videoId.startsWith('screen-') 
+      ? `screen-container-${videoId.substring(7)}` 
+      : `container-${videoId === 'local' ? 'localVideo' : videoId}`);
   
-  // Check if we got the original video - if not, might be a sidebar-prefixed ID
+  // Adjust for local video special case
+  if (videoId === 'local') {
+    containerIdToFind = 'localVideoContainer';
+  }
+  
+  // Get the original video container
+  const videoContainer = document.getElementById(containerIdToFind);
+  console.log(`Looking for container: ${containerIdToFind}, found: ${videoContainer ? 'yes' : 'no'}`);
+  
+  if (!videoContainer) {
+    console.error(`Cannot find video container for ${videoId} with ID ${containerIdToFind}`);
+    return;
+  }
+  
+  // Get the original video element to access its stream
+  const originalVideo = videoContainer.querySelector('video');
+  
   if (!originalVideo || !originalVideo.srcObject) {
-    // For local screen specifically, try the direct ID
-    if (isLocalScreenShare) {
-      const directVideo = document.getElementById('local-screen');
-      if (directVideo && directVideo.srcObject) {
-        originalVideo = directVideo;
-      } else {
-        console.error("Cannot pin video: local screen source not found");
-        return;
-      }
-    } else {
-      console.error("Cannot pin video: source not found");
-      return;
-    }
+    console.error(`Cannot find video element or stream for ${videoId}`);
+    return;
   }
   
   // Get the source stream
@@ -206,98 +200,85 @@ function pinVideo(videoId) {
     window.screenStream = stream;
   }
   
-  // Find the container
-  let videoContainer;
+  // Create a new container for the pinned video
+  const pinnedContainer = document.createElement('div');
+  pinnedContainer.id = `pinned-${containerIdToFind}`;
+  pinnedContainer.classList.add('video-item');
   
-  if (isLocalScreenShare) {
-    videoContainer = document.getElementById('local-screen-container');
-  } else {
-    videoContainer = document.getElementById(
-      videoId.startsWith('screen-') ? `screen-container-${videoId.substring(7)}` : `container-${videoId}`
-    );
+  // If it's a screen share, add the screen share container class
+  if (isScreenShare) {
+    pinnedContainer.classList.add('screen-share-container', 'pinned-screen-share');
   }
   
-  if (videoContainer) {
-    // Create a new container for the pinned video
-    const pinnedContainer = document.createElement('div');
-    pinnedContainer.id = `pinned-${videoContainer.id}`;
-    pinnedContainer.classList.add('video-item');
-    
-    // If it's a screen share, add the screen share container class
-    if (isScreenShare) {
-      pinnedContainer.classList.add('screen-share-container', 'pinned-screen-share');
-    }
-    
-    // Create a new video element
-    const pinnedVideo = document.createElement('video');
-    pinnedVideo.id = `pinned-${originalVideoId}`;
-    pinnedVideo.autoplay = true;
-    pinnedVideo.playsinline = true;
-    
-    // Important: Set srcObject before appending to DOM to avoid blank video
-    pinnedVideo.srcObject = stream;
-    
-    // Add aspect ratio listener
-    addVideoLoadedListener(pinnedVideo);
-    
-    // If the original was the local video, mute it
-    if (videoId === 'local' || videoId === 'local-screen') {
-      pinnedVideo.muted = true;
-    }
-    
-    // If the original was a screen share, add the class
-    if (isScreenShare) {
-      pinnedVideo.classList.add('screen-share');
-      
-      // Add screen share icon
-      const screenIcon = document.createElement("div");
-      screenIcon.classList.add("screen-share-icon");
-      screenIcon.innerHTML = '<span class="material-icons">screen_share</span>';
-      pinnedContainer.appendChild(screenIcon);
-    }
-    
-    // Copy the label
-    const originalLabel = videoContainer.querySelector('.user-label');
-    const label = document.createElement('div');
-    label.classList.add('user-label');
-    label.textContent = originalLabel ? originalLabel.textContent : (isScreenShare ? 'Screen Share' : 'Video');
-    
-    // Add pinned badge
-    const pinnedBadge = document.createElement("div");
-    pinnedBadge.classList.add("pinned-badge");
-    pinnedBadge.textContent = "Pinned";
-    
-    // Append elements
-    pinnedContainer.appendChild(pinnedVideo);
-    pinnedContainer.appendChild(label);
-    pinnedContainer.appendChild(pinnedBadge);
-    
-    // Add unpin button
-    addPinButton(pinnedContainer, videoId, true);
-    
-    // Add swap view buttons if we have more than one participant
-    const otherParticipantsExist = document.querySelectorAll('.videos-container .video-item').length > 1;
-    if (otherParticipantsExist) {
-      addSwapViewButtons(pinnedContainer);
-    }
-    
-    // Clear any previous pinned video
-    window.pinnedVideoWrapper.innerHTML = '';
-    window.pinnedVideoWrapper.appendChild(pinnedContainer);
-    
-    // Play the video
-    pinnedVideo.play().catch(e => console.error("Error playing pinned video:", e));
-    
-    // Hide the original container
-    videoContainer.style.display = 'none';
-    
-    // Move all other videos to the sidebar, including previously pinned
-    moveOtherVideosToSidebar(videoId);
-    
-    // Announce pin action for screen readers (accessibility)
-    const announceMsg = `${isScreenShare ? 'Screen share' : 'Video'} has been pinned`;
-    announceToScreenReaders(announceMsg);
+  // Create a new video element
+  const pinnedVideo = document.createElement('video');
+  pinnedVideo.id = `pinned-${videoId}`;
+  pinnedVideo.autoplay = true;
+  pinnedVideo.playsinline = true;
+  
+  // Important: Set srcObject before appending to DOM to avoid blank video
+  pinnedVideo.srcObject = stream;
+  
+  // Add aspect ratio listener
+  addVideoLoadedListener(pinnedVideo);
+  
+  // If the original was the local video, mute it
+  if (videoId === 'local' || videoId === 'local-screen') {
+    pinnedVideo.muted = true;
   }
+  
+  // If the original was a screen share, add the class
+  if (isScreenShare) {
+    pinnedVideo.classList.add('screen-share');
+    
+    // Add screen share icon
+    const screenIcon = document.createElement("div");
+    screenIcon.classList.add("screen-share-icon");
+    screenIcon.innerHTML = '<span class="material-icons">screen_share</span>';
+    pinnedContainer.appendChild(screenIcon);
+  }
+  
+  // Copy the label
+  const originalLabel = videoContainer.querySelector('.user-label');
+  const label = document.createElement('div');
+  label.classList.add('user-label');
+  label.textContent = originalLabel ? originalLabel.textContent : (isScreenShare ? 'Screen Share' : 'Video');
+  
+  // Add pinned badge
+  const pinnedBadge = document.createElement("div");
+  pinnedBadge.classList.add("pinned-badge");
+  pinnedBadge.textContent = "Pinned";
+  
+  // Append elements
+  pinnedContainer.appendChild(pinnedVideo);
+  pinnedContainer.appendChild(label);
+  pinnedContainer.appendChild(pinnedBadge);
+  
+  // Add unpin button
+  addPinButton(pinnedContainer, videoId, true);
+  
+  // Add swap view buttons if we have more than one participant
+  const otherParticipantsExist = document.querySelectorAll('.videos-container .video-item').length > 1;
+  if (otherParticipantsExist) {
+    addSwapViewButtons(pinnedContainer);
+  }
+  
+  // Clear any previous pinned video
+  window.pinnedVideoWrapper.innerHTML = '';
+  window.pinnedVideoWrapper.appendChild(pinnedContainer);
+  
+  // Play the video
+  pinnedVideo.play().catch(e => console.error("Error playing pinned video:", e));
+  
+  // Hide the original container
+  videoContainer.style.display = 'none';
+  
+  // Move all other videos to the sidebar, including previously pinned
+  moveOtherVideosToSidebar(videoId);
+  
+  // Announce pin action for screen readers (accessibility)
+  const announceMsg = `${isScreenShare ? 'Screen share' : 'Video'} has been pinned`;
+  announceToScreenReaders(announceMsg);
 }
 
 // Unpin the current video

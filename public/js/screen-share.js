@@ -6,137 +6,52 @@ import { unpinVideo } from './video-pin.js';
 import { addPinButton } from './video-pin.js';
 
 // Start screen sharing
-function startScreenSharing() {
-  if (window.screenSharingActive) return;
-  
-  // Before requesting screen share, make sure we have a valid camera track saved
-  if (!window.cameraVideoTrack && window.localStream) {
-    const videoTracks = window.localStream.getVideoTracks();
-    if (videoTracks.length > 0) {
-      window.cameraVideoTrack = videoTracks[0].clone(); // Create a clone to ensure we have a clean copy
-    }
-  }
-  
-  navigator.mediaDevices.getDisplayMedia({ 
-    video: {
-      width: { ideal: 1920 },
-      height: { ideal: 1080 },
-      frameRate: { ideal: 30 }
-    },
-    audio: false // Disable audio for screen sharing to prevent echo
-  })
-    .then(stream => {
-      // Run check to make sure videos are still visible
-      checkAndRestoreVideos();
-      
-      // Save the screen stream globally
-      window.screenStream = stream;
-      window.screenSharingActive = true;
-      
-      // Create a container for the screen video
-      const videoContainer = document.createElement("div");
-      videoContainer.id = "local-screen-container";
-      videoContainer.classList.add("video-item", "new-screen-share", "screen-share-container");
-      
-      // Create a local video element for screen preview
-      const screenVideo = document.createElement("video");
-      screenVideo.id = "local-screen";
-      screenVideo.muted = true;
-      screenVideo.srcObject = stream;
-      screenVideo.autoplay = true;
-      screenVideo.play().catch(e => console.error("Error playing screen share:", e));
-      screenVideo.playsinline = true;
-      screenVideo.classList.add("screen-share");
-      
-      // Add screen share icon
-      const screenIcon = document.createElement("div");
-      screenIcon.classList.add("screen-share-icon");
-      screenIcon.innerHTML = '<span class="material-icons">screen_share</span>';
-      
-      // Add aspect ratio listener for screen sharing
-      addVideoLoadedListener(screenVideo);
-      
-      // Create label
-      const label = document.createElement("div");
-      label.classList.add("user-label");
-      label.textContent = "Your Screen";
-      
-      // Append elements
-      videoContainer.appendChild(screenVideo);
-      videoContainer.appendChild(label);
-      videoContainer.appendChild(screenIcon);
-      
-      // Add pin button and screen share badge
-      addPinButton(videoContainer, "local-screen");
-      
-      // Make sure local video container is still visible during screen sharing
-      const localVideoContainer = document.getElementById("container-local");
-      if (localVideoContainer) {
-        // Ensure it's visible
-        localVideoContainer.style.display = '';
-      }
-      
-      // If a video is already pinned, add the screen share to the sidebar
-      if (window.pinnedVideoId) {
-        const clone = videoContainer.cloneNode(true);
-        const cloneVideo = clone.querySelector('video');
-        cloneVideo.srcObject = window.screenStream;
-        cloneVideo.id = "sidebar-local-screen";
-        clone.id = "sidebar-container-local-screen";
-        addVideoLoadedListener(cloneVideo);
-        
-        // Update pin button for sidebar
-        addPinButton(clone, "sidebar-local-screen");
-        
-        window.participantsSidebar.appendChild(clone);
-      } else {
-        // Add to the grid
-        window.videosDiv.appendChild(videoContainer);
-        
-        // Option to auto-pin screen shares - disabled to avoid issues
-        const autoPinScreenShare = false; 
-        if (autoPinScreenShare) {
-          setTimeout(() => {
-            // Add pinning animation
-            videoContainer.classList.add('pinning');
-            setTimeout(() => {
-              videoContainer.classList.remove('pinning');
-              pinVideo("local-screen");
-            }, 300);
-          }, 500);
-        }
-      }
-      
-      // Remove animation class after it plays
-      setTimeout(() => {
-        videoContainer.classList.remove("new-screen-share");
-      }, 6000);
-      
-      // Update grid layout
-      updateGridLayout();
-      
-      // Send screen to all connected peers as a separate stream
-      Object.keys(window.peers).forEach(userId => {
-        shareScreenWithUser(userId);
-      });
-      
-      // Listen for the screen sharing to end
-      window.screenStream.getVideoTracks()[0].onended = () => {
-        stopScreenSharing();
-        // Check videos again after stopping
-        setTimeout(checkAndRestoreVideos, 1000);
-      };
-      
-      window.screenShareBtn.disabled = true;
-      window.screenShareBtn.classList.add('active');
-      window.stopScreenShareBtn.disabled = false;
-      
-      // Announce for screen readers
-      announceToScreenReaders("Screen sharing started");
-    })
-    .catch(error => {
-      console.error("Error sharing screen:", error);
+async function startScreenSharing() {
+  try {
+    console.log("Starting screen sharing");
+    // Get screen sharing stream
+    window.screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: {
+        cursor: "always"
+      },
+      audio: false
     });
+    
+    console.log("Screen sharing stream obtained:", window.screenStream);
+    window.screenSharingActive = true;
+    
+    // Create local screen sharing container
+    createLocalScreenShareContainer();
+    
+    // Share to all connected peers
+    Object.keys(window.peers).forEach(userId => {
+      shareScreenWithUser(userId);
+    });
+    
+    // Update button states
+    if (window.screenShareBtn) {
+      window.screenShareBtn.disabled = true;
+    }
+    if (window.stopScreenShareBtn) {
+      window.stopScreenShareBtn.disabled = false;
+    }
+    
+    // Detect when user stops screen sharing natively
+    window.screenStream.getVideoTracks()[0].onended = () => {
+      console.log("User ended screen sharing via browser UI");
+      stopScreenSharing();
+    };
+    
+    // Announce for screen readers
+    import('./utils.js').then(module => {
+      module.announceToScreenReaders("Screen sharing started");
+    });
+    
+  } catch (err) {
+    console.error("Error starting screen sharing:", err);
+    window.screenSharingActive = false;
+    alert("Could not start screen sharing. Please make sure you have granted the necessary permissions.");
+  }
 }
 
 // Stop screen sharing
@@ -358,8 +273,100 @@ function shareScreenWithUser(userId) {
   return peer;
 }
 
+// Create screen sharing video container
+function createLocalScreenShareContainer() {
+  const videoContainer = document.createElement("div");
+  videoContainer.id = "local-screen-container";
+  videoContainer.classList.add("video-item", "screen-share-container");
+  
+  const localScreenVideo = document.createElement("video");
+  localScreenVideo.id = "local-screen";
+  localScreenVideo.muted = true;
+  localScreenVideo.autoplay = true;
+  localScreenVideo.playsinline = true;
+  localScreenVideo.srcObject = window.screenStream;
+  localScreenVideo.classList.add("screen-share");
+  
+  localScreenVideo.play().catch(e => console.error("Error playing local screen video:", e));
+  
+  // Add screen share icon
+  const screenIcon = document.createElement("div");
+  screenIcon.classList.add("screen-share-icon");
+  screenIcon.innerHTML = '<span class="material-icons">screen_share</span>';
+  
+  // Create label with display name
+  const label = document.createElement("div");
+  label.classList.add("user-label");
+  label.textContent = `Screen: ${window.userDisplayName || "You"}`;
+  
+  // Add to DOM
+  videoContainer.appendChild(localScreenVideo);
+  videoContainer.appendChild(label);
+  videoContainer.appendChild(screenIcon);
+  
+  // Add to videos grid
+  if (window.pinnedVideoId) {
+    // If we're in pinned mode, create a sidebar version instead
+    const sidebarContainer = document.createElement("div");
+    sidebarContainer.id = "sidebar-local-screen-container";
+    sidebarContainer.classList.add("video-item", "screen-share-container");
+    
+    const sidebarVideo = document.createElement("video");
+    sidebarVideo.id = "sidebar-local-screen";
+    sidebarVideo.muted = true;
+    sidebarVideo.autoplay = true;
+    sidebarVideo.playsinline = true;
+    sidebarVideo.srcObject = window.screenStream;
+    sidebarVideo.classList.add("screen-share");
+    
+    sidebarVideo.play().catch(e => console.error("Error playing sidebar screen video:", e));
+    
+    // Create label with display name for sidebar
+    const sidebarLabel = document.createElement("div");
+    sidebarLabel.classList.add("user-label");
+    sidebarLabel.textContent = `Screen: ${window.userDisplayName || "You"}`;
+    
+    // Clone the screen icon for sidebar
+    const sidebarIcon = screenIcon.cloneNode(true);
+    
+    // Add to DOM
+    sidebarContainer.appendChild(sidebarVideo);
+    sidebarContainer.appendChild(sidebarLabel);
+    sidebarContainer.appendChild(sidebarIcon);
+    
+    // Add pin button
+    import('./video-pin.js').then(module => {
+      module.addPinButton(sidebarContainer, "sidebar-local-screen");
+    });
+    
+    // Add to sidebar
+    window.participantsSidebar.appendChild(sidebarContainer);
+    
+    // Also add original container to the grid but hide it
+    videoContainer.style.display = 'none';
+    import('./video-pin.js').then(module => {
+      module.addPinButton(videoContainer, "local-screen");
+    });
+    window.videosDiv.appendChild(videoContainer);
+  } else {
+    // Normal mode - add to grid
+    import('./video-pin.js').then(module => {
+      module.addPinButton(videoContainer, "local-screen");
+    });
+    window.videosDiv.appendChild(videoContainer);
+  }
+  
+  // Update grid layout
+  import('./layout.js').then(module => {
+    module.updateGridLayout();
+  });
+  
+  return videoContainer;
+}
+
 export {
   startScreenSharing,
   stopScreenSharing,
-  shareScreenWithUser
+  shareScreenWithUser,
+  createLocalScreenShareContainer
 }; 
