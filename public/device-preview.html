@@ -374,6 +374,17 @@
               <label for="background-color-picker">Select background color:</label>
               <input type="color" id="background-color-picker" value="#34a853">
             </div>
+            
+            <div class="preset-colors">
+              <div class="preset-color" data-color="#34a853" style="background-color: #34a853;"></div>
+              <div class="preset-color" data-color="#4285f4" style="background-color: #4285f4;"></div>
+              <div class="preset-color" data-color="#ea4335" style="background-color: #ea4335;"></div>
+              <div class="preset-color" data-color="#fbbc05" style="background-color: #fbbc05;"></div>
+              <div class="preset-color" data-color="#673ab7" style="background-color: #673ab7;"></div>
+              <div class="preset-color" data-color="#e91e63" style="background-color: #e91e63;"></div>
+              <div class="preset-color" data-color="#009688" style="background-color: #009688;"></div>
+              <div class="preset-color" data-color="#ff5722" style="background-color: #ff5722;"></div>
+            </div>
           </div>
           
           <!-- Custom image background controls -->
@@ -431,7 +442,8 @@
       initBackgroundEffects,
       setBackgroundEffect,
       setBackgroundColor,
-      setBackgroundImage
+      setBackgroundImage,
+      setBlurRadius
     } from './js/device-preview.js';
     
     function joinMeeting() {
@@ -491,6 +503,23 @@
             document.getElementById('color-bg-controls').classList.add('active');
           } else if (effect === 'image') {
             document.getElementById('image-bg-controls').classList.add('active');
+            
+            // Auto-select the first image if available
+            const firstPresetBackground = document.querySelector('.preset-background');
+            if (firstPresetBackground && window.backgroundEffectsInitialized) {
+              const imageUrl = firstPresetBackground.getAttribute('data-image');
+              
+              // Only set if not already set
+              const preview = document.getElementById('image-preview');
+              if (!preview.classList.contains('active')) {
+                // Show image preview
+                preview.style.backgroundImage = `url(${imageUrl})`;
+                preview.classList.add('active');
+                
+                // Set as background
+                setBackgroundImage(imageUrl);
+              }
+            }
           }
           
           // Apply the selected effect
@@ -502,6 +531,31 @@
       const colorPicker = document.getElementById('background-color-picker');
       colorPicker.addEventListener('input', (e) => {
         setBackgroundColor(e.target.value);
+        
+        // Remove active class from all preset colors
+        document.querySelectorAll('.preset-color').forEach(color => {
+          color.classList.remove('active');
+        });
+      });
+      
+      // Setup preset colors
+      const presetColors = document.querySelectorAll('.preset-color');
+      presetColors.forEach(colorElement => {
+        colorElement.addEventListener('click', () => {
+          const color = colorElement.getAttribute('data-color');
+          
+          // Update color picker value
+          if (colorPicker) {
+            colorPicker.value = color;
+          }
+          
+          // Apply the color
+          setBackgroundColor(color);
+          
+          // Update active state
+          presetColors.forEach(c => c.classList.remove('active'));
+          colorElement.classList.add('active');
+        });
       });
       
       // Background image upload

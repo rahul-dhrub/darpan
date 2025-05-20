@@ -1017,6 +1017,7 @@ video {
   position: relative;
   border-left: 4px solid #43a047;
   background-color: rgba(67, 160, 71, 0.05);
+  border-width: 2px;
 }
 
 .participants-sidebar .screen-share-container .user-label {
@@ -1774,4 +1775,80 @@ video {
 #device-preview-video ~ .background-effects-container #blur-value {
   background: #f1f3f4;
   color: #5f6368;
+}
+
+/* Preset colors for background effect */
+.preset-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.preset-color {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #dadce0;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.preset-color:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.preset-color.active {
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #1a73e8;
+}
+
+/* Recording button styles */
+#recordBtn.recording {
+  background-color: #ea4335;
+  color: white;
+  animation: recordingPulse 2s infinite;
+}
+
+#recordBtn.recording .control-icon {
+  color: white;
+}
+
+@keyframes recordingPulse {
+  0% { background-color: #ea4335; }
+  50% { background-color: #ff7b6b; }
+  100% { background-color: #ea4335; }
+}
+
+.recording-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(234, 67, 53, 0.9);
+  color: white;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  animation: blinkingDot 1.5s infinite;
+}
+
+.recording-indicator::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: white;
+  border-radius: 50%;
+}
+
+@keyframes blinkingDot {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
 } 

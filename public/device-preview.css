@@ -260,4 +260,32 @@ body, html {
     padding: 12px 30px;
     font-size: 16px;
   }
+}
+
+/* Preset colors for background effect */
+.preset-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.preset-color {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #dadce0;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.preset-color:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.preset-color.active {
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #1a73e8;
 } 

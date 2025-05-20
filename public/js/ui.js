@@ -1,6 +1,7 @@
 // Module for handling UI elements and interactions
 import { updateVideoContainerHeight, updateGridLayout } from './layout.js';
 import { startScreenSharing, stopScreenSharing } from './screen-share.js';
+import { startRecording, stopRecording } from './recording.js';
 import { addMessage } from './socket.js';
 
 // Function to initialize all UI elements
@@ -27,6 +28,8 @@ function setupUIElements() {
   window.header = document.querySelector(".header");
   window.controls = document.querySelector(".controls");
   window.controlsContainer = document.querySelector(".controls-container");
+  window.recordBtn = document.getElementById("recordBtn");
+  window.stopRecordBtn = document.getElementById("stopRecordBtn");
 }
 
 // Setup all UI event listeners
@@ -84,9 +87,22 @@ function setupUIEventListeners() {
     updateVideoContainerHeight();
   });
 
+  // Start recording
+  window.recordBtn.addEventListener("click", () => {
+    startRecording();
+  });
+
+  // Stop recording
+  window.stopRecordBtn.addEventListener("click", () => {
+    stopRecording();
+  });
+
   // Leave meeting
   window.leaveBtn.addEventListener("click", () => {
     if (confirm("Are you sure you want to leave the meeting?")) {
+      // Stop recording if active
+      stopRecording();
+      
       // Calculate meeting duration in seconds
       const meetingDuration = Math.floor((Date.now() - window.meetingStartTime) / 1000);
       
