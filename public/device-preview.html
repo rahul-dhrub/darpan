@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +14,7 @@
   <!-- BodyPix for background segmentation -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
 </head>
+
 <body>
   <div class="home-container">
     <div class="device-preview-container">
@@ -26,7 +28,7 @@
           Go Back
         </button>
       </div>
-      
+
       <div class="preview-video-container">
         <video id="device-preview-video" autoplay muted playsinline></video>
         <canvas id="processed-video-canvas"></canvas>
@@ -34,7 +36,7 @@
           <span class="material-icons">person</span>
         </div>
       </div>
-      
+
       <div class="preview-controls">
         <button id="mic-toggle" class="preview-control-btn">
           <span class="material-icons">mic</span>
@@ -43,47 +45,47 @@
           <span class="material-icons">videocam</span>
         </button>
       </div>
-      
+
       <div class="device-selection">
         <h3>Camera</h3>
         <select id="camera-select" class="device-select"></select>
         <p id="camera-error" class="device-error-message">No camera detected</p>
-        
+
         <h3>Microphone</h3>
         <select id="microphone-select" class="device-select"></select>
         <div class="audio-meter-container">
           <div id="audio-level-meter"></div>
         </div>
         <p id="mic-error" class="device-error-message">No microphone detected</p>
-        
+
         <div class="background-effects-container">
           <h3 class="background-effects-title">
             <span class="material-icons">wallpaper</span>
             Background Effects
           </h3>
-          
+
           <div class="background-effects-options">
             <div class="background-effect-option none active" data-effect="none">
               <span class="material-icons">highlight_off</span>
               <div class="effect-label">None</div>
             </div>
-            
+
             <div class="background-effect-option blur" data-effect="blur">
               <span class="material-icons">blur_on</span>
               <div class="effect-label">Blur</div>
             </div>
-            
+
             <div class="background-effect-option color" data-effect="color">
               <span class="material-icons">format_color_fill</span>
               <div class="effect-label">Color</div>
             </div>
-            
+
             <div class="background-effect-option" data-effect="image">
               <span class="material-icons">image</span>
               <div class="effect-label">Image</div>
             </div>
           </div>
-          
+
           <!-- Blur background controls -->
           <div id="blur-bg-controls" class="custom-background-controls">
             <div class="blur-slider-container">
@@ -92,14 +94,14 @@
               <span id="blur-value">15</span>
             </div>
           </div>
-          
+
           <!-- Custom color background controls -->
           <div id="color-bg-controls" class="custom-background-controls">
             <div class="color-picker-container">
               <label for="background-color-picker">Select background color:</label>
               <input type="color" id="background-color-picker" value="#34a853">
             </div>
-            
+
             <div class="preset-colors">
               <div class="preset-color" data-color="#34a853" style="background-color: #34a853;"></div>
               <div class="preset-color" data-color="#4285f4" style="background-color: #4285f4;"></div>
@@ -111,7 +113,7 @@
               <div class="preset-color" data-color="#ff5722" style="background-color: #ff5722;"></div>
             </div>
           </div>
-          
+
           <!-- Custom image background controls -->
           <div id="image-bg-controls" class="custom-background-controls">
             <div class="image-upload-container">
@@ -121,26 +123,31 @@
                 <span class="material-icons" style="vertical-align: middle; margin-right: 5px;">upload</span>
                 Upload Image
               </button>
-              
+
               <div id="image-preview" class="image-preview"></div>
-              
+
               <div class="preset-backgrounds">
-                <div class="preset-background" data-image="images/backgrounds/office.jpg" style="background-image: url('images/backgrounds/office.jpg');"></div>
-                <div class="preset-background" data-image="images/backgrounds/beach.jpg" style="background-image: url('images/backgrounds/beach.jpg');"></div>
-                <div class="preset-background" data-image="images/backgrounds/mountain.jpg" style="background-image: url('images/backgrounds/mountain.jpg');"></div>
-                <div class="preset-background" data-image="images/backgrounds/city.jpeg" style="background-image: url('images/backgrounds/city.jpeg');"></div>
+                <div class="preset-background" data-image="images/backgrounds/office.jpg"
+                  style="background-image: url('images/backgrounds/office.jpg');"></div>
+                <div class="preset-background" data-image="images/backgrounds/beach.jpg"
+                  style="background-image: url('images/backgrounds/beach.jpg');"></div>
+                <div class="preset-background" data-image="images/backgrounds/mountain.jpg"
+                  style="background-image: url('images/backgrounds/mountain.jpg');"></div>
+                <div class="preset-background" data-image="images/backgrounds/city.jpeg"
+                  style="background-image: url('images/backgrounds/city.jpeg');"></div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
-      <div class="preview-buttons" style="display: flex !important; justify-content: flex-end !important; margin-top: 24px !important;">
+
+      <div class="preview-buttons"
+        style="display: flex !important; justify-content: flex-end !important; margin-top: 24px !important;">
         <button id="cancel-join" class="preview-btn cancel">Cancel</button>
       </div>
     </div>
   </div>
-  
+
   <div class="bottom-join-container">
     <button id="main-join-button" class="main-join-btn">
       Join Meeting
@@ -176,9 +183,9 @@
         <h3>Legal</h3>
         <ul class="footer-links">
           <li><a href="terms.html">Terms of Service</a></li>
-          <li><a href="#">Privacy Policy</a></li>
-          <li><a href="#">Cookie Policy</a></li>
-          <li><a href="#">Security</a></li>
+          <li><a href="privacy.html">Privacy Policy</a></li>
+          <li><a href="cookies.html">Cookie Policy</a></li>
+          <li><a href="security.html">Security</a></li>
         </ul>
       </div>
     </div>
@@ -189,17 +196,17 @@
 
   <script>
     window.roomId = new URLSearchParams(window.location.search).get('room');
-    
+
     if (!window.roomId) {
       window.location.href = '/home.html';
     }
   </script>
 
   <script type="module">
-    import { 
-      getAvailableDevices, 
-      startDevicePreview, 
-      stopDevicePreview, 
+    import {
+      getAvailableDevices,
+      startDevicePreview,
+      stopDevicePreview,
       getSelectedDevices,
       handleDeviceChange,
       toggleAudio,
@@ -210,162 +217,162 @@
       setBackgroundImage,
       setBlurRadius
     } from './js/device-preview.js';
-    
+
     function joinMeeting() {
       const selectedDevices = getSelectedDevices();
       stopDevicePreview();
-      
+
       sessionStorage.setItem('selectedDevices', JSON.stringify(selectedDevices));
-      
+
       window.location.href = `/index.html?room=${window.roomId}`;
     }
-    
+
     document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('camera-select').addEventListener('change', (e) => {
         handleDeviceChange('video', e.target.value);
       });
-      
+
       document.getElementById('microphone-select').addEventListener('change', (e) => {
         handleDeviceChange('audio', e.target.value);
       });
-      
+
       document.getElementById('mic-toggle').addEventListener('click', toggleAudio);
       document.getElementById('camera-toggle').addEventListener('click', toggleVideo);
-      
+
       document.getElementById('cancel-join').addEventListener('click', () => {
         stopDevicePreview();
         window.location.href = '/home.html';
       });
-      
+
       document.getElementById('go-back').addEventListener('click', () => {
         stopDevicePreview();
         window.location.href = '/home.html';
       });
-      
+
       const mainJoinBtn = document.getElementById('main-join-button');
       mainJoinBtn.addEventListener('click', joinMeeting);
-      
+
       // Setup background effects UI interactions
       const effectOptions = document.querySelectorAll('.background-effect-option');
       effectOptions.forEach(option => {
         option.addEventListener('click', () => {
           // Remove active class from all options
           effectOptions.forEach(opt => opt.classList.remove('active'));
-          
+
           // Add active class to selected option
           option.classList.add('active');
-          
+
           // Hide all custom controls
           document.querySelectorAll('.custom-background-controls').forEach(
             control => control.classList.remove('active')
           );
-          
+
           // Get the selected effect
           const effect = option.getAttribute('data-effect');
-          
+
           // Show relevant custom controls
           if (effect === 'color') {
             document.getElementById('color-bg-controls').classList.add('active');
           } else if (effect === 'image') {
             document.getElementById('image-bg-controls').classList.add('active');
-            
+
             // Auto-select the first image if available
             const firstPresetBackground = document.querySelector('.preset-background');
             if (firstPresetBackground && window.backgroundEffectsInitialized) {
               const imageUrl = firstPresetBackground.getAttribute('data-image');
-              
+
               // Only set if not already set
               const preview = document.getElementById('image-preview');
               if (!preview.classList.contains('active')) {
                 // Show image preview
                 preview.style.backgroundImage = `url(${imageUrl})`;
                 preview.classList.add('active');
-                
+
                 // Set as background
                 setBackgroundImage(imageUrl);
               }
             }
           }
-          
+
           // Apply the selected effect
           setBackgroundEffect(effect);
         });
       });
-      
+
       // Background color picker
       const colorPicker = document.getElementById('background-color-picker');
       colorPicker.addEventListener('input', (e) => {
         setBackgroundColor(e.target.value);
-        
+
         // Remove active class from all preset colors
         document.querySelectorAll('.preset-color').forEach(color => {
           color.classList.remove('active');
         });
       });
-      
+
       // Setup preset colors
       const presetColors = document.querySelectorAll('.preset-color');
       presetColors.forEach(colorElement => {
         colorElement.addEventListener('click', () => {
           const color = colorElement.getAttribute('data-color');
-          
+
           // Update color picker value
           if (colorPicker) {
             colorPicker.value = color;
           }
-          
+
           // Apply the color
           setBackgroundColor(color);
-          
+
           // Update active state
           presetColors.forEach(c => c.classList.remove('active'));
           colorElement.classList.add('active');
         });
       });
-      
+
       // Background image upload
       const uploadBtn = document.getElementById('upload-image-btn');
       const fileInput = document.getElementById('background-image-upload');
-      
+
       uploadBtn.addEventListener('click', () => {
         fileInput.click();
       });
-      
+
       fileInput.addEventListener('change', (e) => {
         if (e.target.files && e.target.files[0]) {
           const file = e.target.files[0];
           const imageURL = URL.createObjectURL(file);
-          
+
           // Show image preview
           const preview = document.getElementById('image-preview');
           preview.style.backgroundImage = `url(${imageURL})`;
           preview.classList.add('active');
-          
+
           // Set as background
           setBackgroundImage(imageURL);
         }
       });
-      
+
       // Preset background images
       const presetBackgrounds = document.querySelectorAll('.preset-background');
       presetBackgrounds.forEach(preset => {
         preset.addEventListener('click', () => {
           const imageUrl = preset.getAttribute('data-image');
-          
+
           // Show image preview
           const preview = document.getElementById('image-preview');
           preview.style.backgroundImage = `url(${imageUrl})`;
           preview.classList.add('active');
-          
+
           // Set as background
           setBackgroundImage(imageUrl);
         });
       });
-      
+
       // Blur intensity slider
       const blurSlider = document.getElementById('blur-intensity');
       const blurValue = document.getElementById('blur-value');
-      
+
       if (blurSlider && blurValue) {
         blurSlider.addEventListener('input', (e) => {
           const value = e.target.value;
@@ -373,7 +380,7 @@
           setBlurRadius(Number(value));
         });
       }
-      
+
       try {
         await getAvailableDevices();
         await initBackgroundEffects();
@@ -382,10 +389,11 @@
         console.error("Error initializing device preview:", error);
       }
     });
-    
+
     window.addEventListener('beforeunload', () => {
       stopDevicePreview();
     });
   </script>
 </body>
+
 </html>

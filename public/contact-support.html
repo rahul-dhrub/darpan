@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,23 +15,27 @@
       margin: 60px auto 40px auto;
       background: #fff;
       border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.07);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
       padding: 32px 28px;
     }
+
     .contact-support-container h2 {
       text-align: center;
       margin-bottom: 24px;
       color: #333;
     }
+
     .form-group {
       margin-bottom: 18px;
     }
+
     .form-group label {
       display: block;
       margin-bottom: 6px;
       color: #444;
       font-weight: 500;
     }
+
     .form-group input[type="text"],
     .form-group input[type="email"],
     .form-group textarea {
@@ -42,12 +47,15 @@
       font-family: inherit;
       resize: vertical;
     }
+
     .form-group input[type="file"] {
       margin-top: 6px;
     }
+
     .form-group textarea {
       min-height: 90px;
     }
+
     .submit-btn {
       width: 100%;
       background: #4285f4;
@@ -60,22 +68,32 @@
       cursor: pointer;
       transition: background 0.3s;
     }
+
     .submit-btn:hover {
       background: #3367d6;
     }
-    .success-message, .error-message {
+
+    .success-message,
+    .error-message {
       text-align: center;
       margin-top: 18px;
       font-size: 15px;
       font-weight: 500;
     }
-    .success-message { color: #34a853; }
-    .error-message { color: #ea4335; }
+
+    .success-message {
+      color: #34a853;
+    }
+
+    .error-message {
+      color: #ea4335;
+    }
+
     .file-list {
       margin-top: 10px;
       font-size: 14px;
     }
-    
+
     .file-item {
       display: flex;
       align-items: center;
@@ -85,7 +103,7 @@
       border-radius: 4px;
       margin-bottom: 6px;
     }
-    
+
     .file-item .file-name {
       flex: 1;
       margin-right: 10px;
@@ -93,7 +111,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    
+
     .file-item .remove-file {
       background: none;
       border: none;
@@ -103,12 +121,13 @@
       display: flex;
       align-items: center;
     }
-    
+
     .file-item .remove-file:hover {
       color: #d33426;
     }
   </style>
 </head>
+
 <body>
   <div class="home-container">
     <nav class="navbar">
@@ -138,7 +157,8 @@
         </div>
         <div class="form-group">
           <label for="attachments">Attachments (optional)</label>
-          <input type="file" id="attachments" name="attachments" accept="image/*,application/pdf,.doc,.docx,.txt" multiple>
+          <input type="file" id="attachments" name="attachments" accept="image/*,application/pdf,.doc,.docx,.txt"
+            multiple>
           <div id="fileList" class="file-list"></div>
         </div>
         <button type="submit" class="submit-btn">Send</button>
@@ -176,8 +196,8 @@
         <ul class="footer-links">
           <li><a href="terms.html">Terms of Service</a></li>
           <li><a href="privacy.html">Privacy Policy</a></li>
-          <li><a href="#">Cookie Policy</a></li>
-          <li><a href="#">Security</a></li>
+          <li><a href="cookies.html">Cookie Policy</a></li>
+          <li><a href="security.html">Security</a></li>
         </ul>
       </div>
     </div>
@@ -191,7 +211,7 @@
     const fileList = document.getElementById('fileList');
     let selectedFiles = new Set();
 
-    attachmentsInput.addEventListener('change', function(e) {
+    attachmentsInput.addEventListener('change', function (e) {
       const files = Array.from(e.target.files);
       files.forEach(file => {
         if (!selectedFiles.has(file.name)) {
@@ -210,13 +230,13 @@
     });
 
     // Handle file removal
-    fileList.addEventListener('click', function(e) {
+    fileList.addEventListener('click', function (e) {
       if (e.target.closest('.remove-file')) {
         const button = e.target.closest('.remove-file');
         const filename = button.dataset.filename;
         selectedFiles.delete(filename);
         button.closest('.file-item').remove();
-        
+
         // Create a new FileList without the removed file
         const dt = new DataTransfer();
         Array.from(attachmentsInput.files)
@@ -226,7 +246,7 @@
       }
     });
 
-    document.getElementById('supportForm').addEventListener('submit', async function(e) {
+    document.getElementById('supportForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const form = e.target;
       const formData = new FormData(form);
@@ -253,4 +273,5 @@
     });
   </script>
 </body>
+
 </html>
