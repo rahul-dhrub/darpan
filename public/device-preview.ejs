@@ -195,7 +195,11 @@
   </footer>
 
   <script>
-   
+    window.roomId = new URLSearchParams(window.location.search).get('room');
+
+    if (!window.roomId) {
+      window.location.href = '/home';
+    }
   </script>
   
   <script type="module" src="js/device-preview-ui.js"></script>

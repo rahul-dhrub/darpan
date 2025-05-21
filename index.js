@@ -49,18 +49,10 @@ app.get('/how-it-works', (req, res) => {
   res.render('how-it-works');
 });
 
-app.get('/meet', (req, res) => {
-  res.render('meet');
-});
-
 app.get('/privacy', (req, res) => {
   res.render('privacy');
 });
 
-app.get('/rating', (req, res) => {
-  const { duration, room } = req.query;
-  res.render('rating', { duration, room });
-});
 
 app.get('/security', (req, res) => {
   res.render('security');
@@ -70,10 +62,6 @@ app.get('/terms', (req, res) => {
   res.render('terms');
 });
 
-app.get('/device-preview', (req, res) => {
-  const { room } = req.query;
-  res.render('device-preview', { room });
-});
 
 // Static middleware should come after specific routes
 app.use(express.static("public"));
@@ -600,6 +588,21 @@ app.get('/generate-cookie-password', (req, res) => {
     console.error('Error generating cookie password:', error);
     return res.status(500).json({ error: 'Failed to generate cookie password' });
   }
+});
+
+app.get('/device-preview', withAuth, (req, res) => {
+  const { room } = req.query;
+  res.render('device-preview', { room });
+});
+
+app.get('/rating', withAuth, (req, res) => {
+  const { duration, room } = req.query;
+  res.render('rating', { duration, room });
+});
+
+app.get('/meet', withAuth, (req, res) => {
+  const { room } = req.query;
+  res.render('meet', { room });
 });
 
 server.listen(process.env.PORT, () => {
