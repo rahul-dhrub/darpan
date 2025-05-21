@@ -90,11 +90,11 @@ if (rejoinButton) {
     const { roomId } = getUrlParams();
     if (roomId) {
       // Go to device preview page with the same room ID
-      window.location.href = `/device-preview.html?room=${roomId}`;
+      window.location.href = `/device-preview?room=${roomId}`;
     } else {
       // If no room ID is available, go to home page
       alert("The previous meeting information is not available. Starting a new meeting.");
-      window.location.href = '/home.html';
+      window.location.href = '/home';
     }
   });
 }

@@ -4,11 +4,14 @@ const http = require("http");
 const { Server } = require("socket.io");
 const { WorkOS } = require('@workos-inc/node');
 const cookieParser = require("cookie-parser");
-
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'public')); 
 
 const workos = new WorkOS(process.env.WORKOS_API_KEY, {
   clientId: process.env.WORKOS_CLIENT_ID,
@@ -19,7 +22,57 @@ const userDisplayNames = new Map(); // roomId -> Map<userId, displayName>
 
 // Root route
 app.get('/', (req, res) => {
-  res.redirect('/home.html');
+  res.redirect('/home');
+});
+
+app.get('/home', (req, res) => {
+  res.render('home');
+});
+
+app.get('/about', (req, res) => {
+  res.render('about');
+});
+
+app.get('/cookies', (req, res) => {
+  res.render('cookies');
+});
+
+app.get('/contact-support', (req, res) => {
+  res.render('contact-support');
+});
+
+app.get('/features', (req, res) => {
+  res.render('features');
+});
+
+app.get('/how-it-works', (req, res) => {
+  res.render('how-it-works');
+});
+
+app.get('/meet', (req, res) => {
+  res.render('meet');
+});
+
+app.get('/privacy', (req, res) => {
+  res.render('privacy');
+});
+
+app.get('/rating', (req, res) => {
+  const { duration, room } = req.query;
+  res.render('rating', { duration, room });
+});
+
+app.get('/security', (req, res) => {
+  res.render('security');
+});
+
+app.get('/terms', (req, res) => {
+  res.render('terms');
+});
+
+app.get('/device-preview', (req, res) => {
+  const { room } = req.query;
+  res.render('device-preview', { room });
 });
 
 // Static middleware should come after specific routes
@@ -396,8 +449,8 @@ app.get('/dashboard', withAuth, async (req, res) => {
     // Generate a random room ID
     const roomId = Math.random().toString(36).substring(2, 12);
     
-    // Redirect to device-preview.html with the room ID
-    return res.redirect(`/device-preview.html?room=${roomId}`);
+    // Redirect to device-preview with the room ID
+    return res.redirect(`/device-preview?room=${roomId}`);
   } catch (error) {
     console.error('Error in dashboard route:', error);
     console.log('Error type:', error.constructor.name);
