@@ -5,6 +5,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const copyConfirmation = document.getElementById('copyConfirmation');
   let generatedRoomId = null;
   
+  // Initialize UI based on login status (login state is passed from server)
+  function initializeUI() {
+    // Login status is already handled by EJS templating
+    console.log('UI initialized with login status');
+    
+    // Apply avatar background color from data attribute
+    const userAvatar = document.querySelector('.user-avatar');
+    if (userAvatar) {
+      const bgColor = userAvatar.getAttribute('data-bg-color');
+      if (bgColor) {
+        userAvatar.style.backgroundColor = bgColor;
+      }
+    }
+  }
+  
+  // Call initializeUI on page load
+  initializeUI();
+  
   // Create meeting button
   document.getElementById('createMeetingBtn').addEventListener('click', () => {
     // Generate a random room ID

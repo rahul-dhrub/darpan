@@ -10,6 +10,9 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Add cookie-parser middleware
+app.use(cookieParser());
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'public')); 
 
@@ -25,8 +28,14 @@ app.get('/', (req, res) => {
   res.redirect('/home');
 });
 
-app.get('/home', (req, res) => {
-  res.render('home');
+app.get('/home', async (req, res) => {
+  try {
+    const authResult = await checkAuth(req);
+    res.render('home', authResult);
+  } catch (error) {
+    console.error('Error in home route:', error);
+    res.render('home', { isLoggedIn: false, userData: null });
+  }
 });
 
 app.get('/about', (req, res) => {
@@ -302,8 +311,14 @@ app.get('/callback', async (req, res) => {
     // Use the information in `user` for further business logic.
 
     // Redirect the user to the homepage
-    console.log(`User ${user.firstName} is logged in: detail: `, user);
-    return res.redirect('/dashboard');
+    console.log(`User logged in with details:`, {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName || 'Not provided',
+      lastName: user.lastName || 'Not provided',
+      fullUser: user
+    });
+    return res.redirect('/');
   } catch (error) {
     console.error('Error during authentication:', error);
     console.log('Error type:', error.constructor.name);
@@ -313,7 +328,39 @@ app.get('/callback', async (req, res) => {
   }
 });
 
+// Utility function to check if a user is authenticated
+async function checkAuth(req) {
+  try {
+    if (!req.cookies['wos-session']) {
+      return { isLoggedIn: false, userData: null };
+    }
 
+    const session = workos.userManagement.loadSealedSession({
+      sessionData: req.cookies['wos-session'],
+      cookiePassword: process.env.WORKOS_COOKIE_PASSWORD,
+    });
+    
+    const { authenticated, user } = await session.authenticate();
+    
+    if (authenticated) {
+      return { 
+        isLoggedIn: true, 
+        userData: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          displayName: user.email ? user.email.split('@')[0] : 'User'
+        }
+      };
+    }
+    
+    return { isLoggedIn: false, userData: null };
+  } catch (error) {
+    console.error('Error checking authentication status:', error);
+    return { isLoggedIn: false, userData: null };
+  }
+}
 
 // Auth middleware function
 async function withAuth(req, res, next) {

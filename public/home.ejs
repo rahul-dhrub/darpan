@@ -18,8 +18,63 @@
         <a href="/features">Features</a>
         <a href="/how-it-works">How it works</a>
         <a href="/about">About</a>
-        <a href="/login" class="login-btn">Login</a>
-        <a href="/logout" class="login-btn">Log Out</a>
+        <% if (typeof isLoggedIn !== 'undefined' && isLoggedIn) { %>
+          <div class="user-profile">
+            <% 
+              // Generate a color based on the user identifier
+              let colorSeed = 0;
+              if (userData && userData.id) {
+                // Use user ID as seed
+                for (let i = 0; i < userData.id.length; i++) {
+                  colorSeed += userData.id.charCodeAt(i);
+                }
+              } else if (userData && userData.email) {
+                // Use email as seed
+                for (let i = 0; i < userData.email.length; i++) {
+                  colorSeed += userData.email.charCodeAt(i);
+                }
+              } else {
+                // Default seed
+                colorSeed = 123;
+              }
+              
+              // Create a deterministic but varied hue (0-360)
+              const hue = colorSeed % 360;
+              
+              // Create the background color
+              const bgColor = `hsl(${hue}, 70%, 50%)`;
+              
+              // Generate initial
+              let initial = "U";
+              if (userData && userData.firstName) {
+                initial = userData.firstName.charAt(0);
+              } else if (userData && userData.displayName) {
+                initial = userData.displayName.charAt(0);
+              }
+            %>
+            <div class="user-avatar" data-bg-color="<%= bgColor %>">
+              <%= initial %>
+            </div>
+            <span class="user-name">
+              <% if (userData && (userData.firstName || userData.lastName)) { %>
+                <%= userData.firstName %> <%= userData.lastName %>
+              <% } else if (userData && userData.displayName) { %>
+                <%= userData.displayName %>
+              <% } else { %>
+                User
+              <% } %>
+            </span>
+            <a href="/logout" class="logout-btn">
+              <span class="material-icons" style="margin-right: 5px; font-size: 18px; color: white;">logout</span>
+              Logout
+            </a>
+          </div>
+        <% } else { %>
+          <a href="/login" class="login-btn">
+            <span class="material-icons" style="margin-right: 5px; font-size: 18px; color: white;">login</span>
+            Login
+          </a>
+        <% } %>
       </div>
     </nav>
     
