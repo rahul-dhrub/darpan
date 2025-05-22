@@ -42,6 +42,21 @@ window.backgroundPanelVisible = false;
 window.savedBackgroundSettings = null; // Store the saved background settings
 window.userDisplayName = `User ${window.socket.id?.substring(0, 5) || 'Local'}`;
 
+// Handle back button press - redirect to home page
+function handleBackButton() {
+  // Push a new state to replace the current one
+  history.pushState(null, "", window.location.href);
+  
+  // Add event listener for popstate (back button click)
+  window.addEventListener('popstate', function(event) {
+    // Redirect to the home page
+    window.location.href = '/home';
+  });
+  
+  // Initially push state to ensure popstate works
+  history.pushState(null, "", window.location.href);
+}
+
 // Advanced audio constraints
 const audioConstraints = {
   echoCancellation: true,
@@ -64,6 +79,9 @@ function getSelectedDevicesFromSession() {
 
 // Initialize the application
 async function init() {
+  // Handle browser back button
+  handleBackButton();
+  
   // Load saved display name if available
   try {
     const savedName = localStorage.getItem('userDisplayName');

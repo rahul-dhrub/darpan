@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Darpan - Video Conferencing</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+</head>
+<body>
+  <div class="home-container">
+    <nav class="navbar">
+      <div class="logo">Darpan</div>
+      <div class="nav-links">
+        <a href="/home" class="active">Home</a>
+        <a href="/features">Features</a>
+        <a href="/how-it-works">How it works</a>
+        <a href="/about">About</a>
+        <% if (typeof isLoggedIn !== 'undefined' && isLoggedIn) { %>
+          <div class="user-profile">
+            <% 
+              // Generate a color based on the user identifier
+              let colorSeed = 0;
+              if (userData && userData.id) {
+                // Use user ID as seed
+                for (let i = 0; i < userData.id.length; i++) {
+                  colorSeed += userData.id.charCodeAt(i);
+                }
+              } else if (userData && userData.email) {
+                // Use email as seed
+                for (let i = 0; i < userData.email.length; i++) {
+                  colorSeed += userData.email.charCodeAt(i);
+                }
+              } else {
+                // Default seed
+                colorSeed = 123;
+              }
+              
+              // Create a deterministic but varied hue (0-360)
+              const hue = colorSeed % 360;
+              
+              // Create the background color
+              const bgColor = `hsl(${hue}, 70%, 50%)`;
+              
+              // Generate initial
+              let initial = "U";
+              if (userData && userData.firstName) {
+                initial = userData.firstName.charAt(0);
+              } else if (userData && userData.displayName) {
+                initial = userData.displayName.charAt(0);
+              }
+            %>
+            <div class="user-avatar" data-bg-color="<%= bgColor %>">
+              <%= initial %>
+            </div>
+            <span class="user-name">
+              <% if (userData && (userData.firstName || userData.lastName)) { %>
+                <%= userData.firstName %> <%= userData.lastName %>
+              <% } else if (userData && userData.displayName) { %>
+                <%= userData.displayName %>
+              <% } else { %>
+                User
+              <% } %>
+            </span>
+            <a href="/logout" class="logout-btn">
+              <span class="material-icons" style="margin-right: 5px; font-size: 18px; color: white;">logout</span>
+              Logout
+            </a>
+          </div>
+        <% } else { %>
+          <a href="/login" class="login-btn">
+            <span class="material-icons" style="margin-right: 5px; font-size: 18px; color: white;">login</span>
+            Login
+          </a>
+        <% } %>
+      </div>
+    </nav>
+    
+    <section class="hero-section">
+      <h1>Connect with Anyone, Anywhere</h1>
+      <p>High-quality video meetings for teams and individuals. Easy to use, secure, and free.</p>
+    </section>
+    
+    <section class="meeting-options">
+      <div>
+        <h2 class="option-title">Create a New Meeting</h2>
+        <p class="option-description">Start an instant meeting with a randomly generated room</p>
+        <div class="button-group">
+          <button id="createMeetingBtn" class="button">Join New Meeting</button>
+          <button id="createLinkBtn" class="button" style="margin-left: 10px; background-color: #9c27b0;">Create Meeting Link</button>
+        </div>
+        <div id="meetingLinkContainer" class="meeting-link-container" style="display: none; margin-top: 15px;">
+          <p class="option-description">Share this link with others to join your meeting:</p>
+          <div class="copy-link-group">
+            <input type="text" id="meetingLinkInput" readonly class="meeting-link-input">
+            <button id="copyLinkBtn" class="copy-button">
+              <span class="material-icons">content_copy</span>
+            </button>
+          </div>
+          <p id="copyConfirmation" class="copy-confirmation" style="display: none;">Link copied to clipboard!</p>
+        </div>
+      </div>
+      
+      <div class="divider">OR</div>
+      
+      <div>
+        <h2 class="option-title">Join a Meeting</h2>
+        <p class="option-description">Enter the meeting code provided by the organizer</p>
+        <div class="input-group">
+          <input type="text" id="roomIdInput" placeholder="Enter room code" autocomplete="off">
+        </div>
+        <button id="joinMeetingBtn" class="button secondary">Join Meeting</button>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h3>Download Our App</h3>
+        <p>Get the best video conferencing experience on your mobile device.</p>
+        <div class="store-buttons">
+          <a href="#" class="store-button">
+            <span class="material-icons">android</span>
+            Get it on Play Store
+          </a>
+          <a href="#" class="store-button">
+            <span class="material-icons">phone_iphone</span>
+            Download on App Store
+          </a>
+        </div>
+      </div>
+      
+      <div class="footer-section">
+        <h3>Quick Links</h3>
+        <ul class="footer-links">
+          <li><a href="/features">Features</a></li>
+          <li><a href="/how-it-works">How it Works</a></li>
+          <li><a href="/about">About Us</a></li>
+          <li><a href="/contact-support">Contact Support</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-section">
+        <h3>Legal</h3>
+        <ul class="footer-links">
+          <li><a href="/terms">Terms of Service</a></li>
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/cookies">Cookie Policy</a></li>
+          <li><a href="/security">Security</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 Darpan. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/home.js"></script>
+</body>
+</html> 

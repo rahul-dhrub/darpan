@@ -127,7 +127,7 @@ function setupUIEventListeners() {
       leaveDialog.classList.remove("show");
       
       // Redirect to rating page with meeting duration and room ID
-      window.location.href = `/rating.html?duration=${meetingDuration}&room=${window.ROOM_ID}`;
+      window.location.href = `/rating?duration=${meetingDuration}&room=${window.ROOM_ID}`;
     };
 
     // Allow clicking outside the popup to cancel

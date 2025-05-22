@@ -6,6 +6,25 @@ let recordedChunks = [];
 let isRecording = false;
 let recordingStream = null;
 let recordingStartTime = null;
+let ffmpegLoaded = false;
+let ffmpegInstance = null;
+
+// Load FFmpeg dynamically when needed
+async function loadFFmpeg() {
+  if (!ffmpegLoaded) {
+    try {
+      // Since SharedArrayBuffer is not available, we'll use a web service approach instead
+      console.log('Using alternative video conversion approach');
+      ffmpegLoaded = true;
+      return true;
+    } catch (error) {
+      console.error('Error loading FFmpeg:', error);
+      throw error;
+    }
+  }
+  
+  return true;
+}
 
 // Start recording
 async function startRecording() {
@@ -85,9 +104,9 @@ async function startRecording() {
         for (let j = 0; j < cols && indexCounter < totalVideos; j++) {
           const video = videoElements[indexCounter];
           
-          if (video && video.srcObject && video.srcObject.active) {
+          if (video && video.readyState >= 2) { // HAVE_CURRENT_DATA or better
             try {
-              // Draw video frame to canvas
+              // Draw video frame to canvas directly from the video element
               ctx.drawImage(
                 video,
                 j * cellWidth,
@@ -189,8 +208,13 @@ async function startRecording() {
       }
     }
     
-    // Start animation
-    drawVideoElements();
+    // Create the animation loop
+    let animationFrameId = requestAnimationFrame(function animate() {
+      drawVideoElements();
+      if (isRecording) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    });
     
     // Create a combined stream for recording
     recordingStream = new MediaStream(tracks);
@@ -328,15 +352,94 @@ function removeRecordingIndicator() {
 }
 
 // Download the recording
-function downloadRecording(blob) {
+async function downloadRecording(blob) {
   // Create a URL for the blob
   const url = URL.createObjectURL(blob);
   
   // Get current date for filename
   const now = new Date();
-  const filename = `darpan-recording-${now.toISOString().replace(/[:.]/g, '-')}.webm`;
+  const webmFilename = `darpan-recording-${now.toISOString().replace(/[:.]/g, '-')}.webm`;
+  const mp4Filename = `darpan-recording-${now.toISOString().replace(/[:.]/g, '-')}.mp4`;
   
-  // Create download link
+  // Add a popup for format selection
+  showFormatSelectionPopup(url, webmFilename, blob, mp4Filename);
+}
+
+// Show popup to select download format
+function showFormatSelectionPopup(webmUrl, webmFilename, webmBlob, mp4Filename) {
+  // Create popup overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'custom-popup-overlay';
+  overlay.style.display = 'flex';
+  overlay.style.opacity = '1';
+  overlay.style.visibility = 'visible';
+  
+  // Create popup
+  const popup = document.createElement('div');
+  popup.className = 'custom-popup';
+  
+  // Updated popup with explanation about MP4 conversion limitations
+  popup.innerHTML = `
+    <div class="popup-header">
+      <h3>Download Recording</h3>
+    </div>
+    <div class="popup-body">
+      <p>Your recording is ready for download!</p>
+      <div class="format-info">
+        <p><strong>Note:</strong> MP4 conversion requires special server configuration. Currently only WebM format is available.</p>
+      </div>
+      <div id="conversion-status" class="conversion-container" style="display: none;">
+        <p class="conversion-status">Converting to MP4... <span id="conversion-progress">0</span>%</p>
+        <div class="conversion-progress-bar">
+          <div id="progress-bar" class="conversion-progress-fill"></div>
+        </div>
+      </div>
+    </div>
+    <div class="popup-footer">
+      <button id="webm-download-btn" class="popup-btn confirm-btn">
+        <span class="material-icons">file_download</span>
+        Download WebM Format
+      </button>
+    </div>
+  `;
+  
+  // Add popup to overlay
+  overlay.appendChild(popup);
+  
+  // Add overlay to body
+  document.body.appendChild(overlay);
+  
+  // Handle WebM download button
+  document.getElementById('webm-download-btn').addEventListener('click', () => {
+    downloadFile(webmUrl, webmFilename);
+    document.body.removeChild(overlay);
+  });
+}
+
+// Convert WebM to MP4 using web service approach
+async function convertWebmToMp4(webmBlob, progressCallback) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Load FFmpeg flag just to maintain code structure
+      await loadFFmpeg();
+      
+      // We'll use direct blob download since conversion isn't working
+      // This is a temporary solution - we'll fall back to WebM
+      throw new Error('MP4 conversion requires secure context with HTTPS and specific security headers');
+      
+      // Note: In a production environment, you would implement one of these solutions:
+      // 1. Server-side conversion API endpoint
+      // 2. Configure server with proper security headers
+      // 3. Use a Web Worker based conversion library
+    } catch (error) {
+      console.error('Conversion error:', error);
+      reject(error);
+    }
+  });
+}
+
+// Helper function to download a file
+function downloadFile(url, filename) {
   const a = document.createElement('a');
   a.style.display = 'none';
   a.href = url;
