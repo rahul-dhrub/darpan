@@ -30,7 +30,9 @@ app.get('/', (req, res) => {
 
 app.get('/home', async (req, res) => {
   try {
+    console.log('Home route accessed');
     const authResult = await checkAuth(req);
+    console.log('Auth result for home page:', JSON.stringify(authResult));
     res.render('home', authResult);
   } catch (error) {
     console.error('Error in home route:', error);
@@ -331,33 +333,78 @@ app.get('/callback', async (req, res) => {
 // Utility function to check if a user is authenticated
 async function checkAuth(req) {
   try {
+    console.log('Cookie exists:', !!req.cookies['wos-session']);
     if (!req.cookies['wos-session']) {
+      console.log('No session cookie found, returning not logged in');
       return { isLoggedIn: false, userData: null };
     }
 
+    // Check if cookie password exists
+    if (!process.env.WORKOS_COOKIE_PASSWORD) {
+      console.error('WORKOS_COOKIE_PASSWORD is not defined in environment variables');
+      return { isLoggedIn: false, userData: null };
+    }
+    
+    console.log('Session cookie found, attempting to load session');
     const session = workos.userManagement.loadSealedSession({
       sessionData: req.cookies['wos-session'],
       cookiePassword: process.env.WORKOS_COOKIE_PASSWORD,
     });
     
-    const { authenticated, user } = await session.authenticate();
+    console.log('Session loaded, attempting to authenticate');
+    let { authenticated, user, reason } = await session.authenticate();
+    console.log('Authentication result:', authenticated, user);
+    console.log('Authentication failure reason:', reason);
     
-    if (authenticated) {
-      return { 
-        isLoggedIn: true, 
-        userData: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-          displayName: user.email ? user.email.split('@')[0] : 'User'
+    // If not authenticated, try to refresh the session
+    if (!authenticated) {
+      console.log('Authentication failed, attempting to refresh session');
+      try {
+        const refreshResult = await session.refresh();
+        authenticated = refreshResult.authenticated;
+        
+        if (authenticated) {
+          console.log('Session refresh successful');
+          // Update user from refreshed session
+          user = refreshResult.user;
+          
+          // If the session was refreshed successfully, update the cookie for future requests
+          if (req.res) {
+            req.res.cookie('wos-session', refreshResult.sealedSession, {
+              path: '/',
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            });
+            console.log('Cookie updated with refreshed session');
+          }
+        } else {
+          console.log('Session refresh failed');
         }
-      };
+      } catch (refreshError) {
+        console.error('Error refreshing session:', refreshError);
+      }
     }
     
+    if (authenticated && user) {
+      console.log('User authenticated:', user.email);
+      const userData = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        displayName: user.email ? user.email.split('@')[0] : 'User'
+      };
+      console.log('User data being passed to template:', userData);
+      return { isLoggedIn: true, userData };
+    }
+    
+    console.log('User not authenticated, returning not logged in');
     return { isLoggedIn: false, userData: null };
   } catch (error) {
     console.error('Error checking authentication status:', error);
+    console.error('Error details:', error.message);
     return { isLoggedIn: false, userData: null };
   }
 }
@@ -429,8 +476,8 @@ async function withAuth(req, res, next) {
         });
         console.log('Cookie updated with refreshed session');
 
-        // Redirect to the same route to ensure the updated cookie is used
-        return res.redirect(req.originalUrl);
+        // Continue to the next middleware instead of redirecting
+        return next();
       } catch (e) {
         console.error('Error refreshing token:', e);
         console.log('Error type:', e.constructor.name);
@@ -650,6 +697,133 @@ app.get('/rating', withAuth, (req, res) => {
 app.get('/meet', withAuth, (req, res) => {
   const { room } = req.query;
   res.render('meet', { room });
+});
+
+// Add a diagnostic route to check cookie settings
+app.get('/debug-cookie', (req, res) => {
+  try {
+    const cookieExists = !!req.cookies['wos-session'];
+    const cookieLength = cookieExists ? req.cookies['wos-session'].length : 0;
+    const passwordExists = !!process.env.WORKOS_COOKIE_PASSWORD;
+    const passwordLength = passwordExists ? process.env.WORKOS_COOKIE_PASSWORD.length : 0;
+    
+    // Generate a test cookie to verify password works
+    const crypto = require('crypto');
+    const testData = {
+      time: new Date().toISOString(),
+      random: crypto.randomBytes(8).toString('hex')
+    };
+    
+    let testCookieValid = false;
+    try {
+      if (passwordExists) {
+        const testCookie = workos.userManagement.sealData({
+          data: testData,
+          password: process.env.WORKOS_COOKIE_PASSWORD
+        });
+        
+        // Try to unseal it
+        const unsealed = workos.userManagement.unsealData({
+          sealedData: testCookie,
+          password: process.env.WORKOS_COOKIE_PASSWORD
+        });
+        
+        testCookieValid = true;
+      }
+    } catch (error) {
+      console.error('Error testing cookie encryption:', error);
+    }
+    
+    res.json({
+      cookieExists,
+      cookieLength,
+      passwordExists,
+      passwordLength,
+      passwordFirstChars: passwordExists ? process.env.WORKOS_COOKIE_PASSWORD.substring(0, 5) + '...' : null,
+      testCookieValid,
+      sessionCookiePresent: cookieExists
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add a route to generate a new cookie for testing
+app.get('/test-cookie-gen', (req, res) => {
+  try {
+    // Generate a sample user object
+    const testUser = {
+      id: 'test_user_123',
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      emailVerified: true
+    };
+    
+    // Check if WorkOS cookie password exists
+    if (!process.env.WORKOS_COOKIE_PASSWORD) {
+      return res.json({ 
+        error: 'WORKOS_COOKIE_PASSWORD not defined',
+        suggestedFix: 'Add this to your .env file with a secure random string'
+      });
+    }
+    
+    console.log('WORKOS_COOKIE_PASSWORD length:', process.env.WORKOS_COOKIE_PASSWORD.length);
+    
+    // Create a test session with this user
+    const now = Math.floor(Date.now() / 1000);
+    const testSession = {
+      user: testUser,
+      expiresAt: now + 86400, // 1 day from now
+      createdAt: now,
+      lastActiveAt: now,
+      idleTimeoutAt: now + 86400,
+      clientId: process.env.WORKOS_CLIENT_ID
+    };
+    
+    // Seal the session data
+    try {
+      const sealedSession = workos.userManagement.sealData({
+        data: testSession,
+        password: process.env.WORKOS_COOKIE_PASSWORD
+      });
+      
+      // Set the test cookie
+      res.cookie('wos-test-session', sealedSession, {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 1 day
+      });
+      
+      // Try to unseal it as a verification
+      const unsealed = workos.userManagement.unsealData({
+        sealedData: sealedSession,
+        password: process.env.WORKOS_COOKIE_PASSWORD
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Test cookie set successfully. This proves the cookie password works for encryption/decryption.',
+        cookieLength: sealedSession.length,
+        unsealed: {
+          user: unsealed.user,
+          expiresAt: new Date(unsealed.expiresAt * 1000).toISOString(),
+          createdAt: new Date(unsealed.createdAt * 1000).toISOString()
+        }
+      });
+    } catch (sealError) {
+      console.error('Error sealing session data:', sealError);
+      return res.status(500).json({
+        error: 'Failed to seal session data',
+        message: sealError.message
+      });
+    }
+  } catch (error) {
+    console.error('Error in test-cookie-gen route:', error);
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 server.listen(process.env.PORT, () => {

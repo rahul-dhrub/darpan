@@ -14,9 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const userAvatar = document.querySelector('.user-avatar');
     if (userAvatar) {
       const bgColor = userAvatar.getAttribute('data-bg-color');
+      console.log('User avatar found, setting background color:', bgColor);
       if (bgColor) {
         userAvatar.style.backgroundColor = bgColor;
+      } else {
+        console.log('No data-bg-color attribute found on user avatar');
       }
+    } else {
+      console.log('No user avatar element found');
     }
   }
   
